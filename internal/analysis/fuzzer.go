@@ -21,17 +21,89 @@ const (
 
 type ConstraintScore map[ConstraintType]float64
 
+func (cs ConstraintScore) Copy() ConstraintScore {
+	res := ConstraintScore{}
+	for k, v := range cs {
+		res[k] = v
+	}
+	return res
+}
+
 func UpdateFuzzerScore(cur ConstraintScore, prev ConstraintScore) ConstraintScore {
+	if prev == nil {
+		prev = ConstraintScore{}
+	}
 
 	for ct := range cur {
 		if _, ok := prev[ct]; ok {
-			cur[ct] = cur[ct] + prev[ct]/10.0
+			prev[ct] = cur[ct] + prev[ct]/10.0
+		} else {
+			prev[ct] = cur[ct]
 		}
 	}
-	return cur
+	return prev
+}
+
+// line is 0-based
+func drillDownToLine(node *sitter.Node, targetLine uint32) *sitter.Node {
+	if node.StartPoint().Row == targetLine && node.EndPoint().Row == targetLine {
+		return node
+	}
+	cursor := sitter.NewTreeCursor(node)
+	defer cursor.Close()
+
+	if cursor.GoToFirstChild() {
+		for {
+			child := cursor.CurrentNode()
+			sRow := child.StartPoint().Row
+			eRow := child.EndPoint().Row
+
+			if sRow == targetLine && eRow == targetLine {
+				return child
+			}
+
+			if sRow <= targetLine && eRow >= targetLine {
+				return drillDownToLine(child, targetLine)
+			}
+			if !cursor.GoToNextSibling() {
+				break
+			}
+		}
+	}
+
+	return node
+}
+
+// line is 1-based
+func findIfStatementAtLine(tree *sitter.Tree, line uint32) *sitter.Node {
+	if tree == nil || tree.RootNode() == nil {
+		return nil
+	}
+
+	p := sitter.Point{Row: line - 1, Column: 0}
+	node := tree.RootNode().NamedDescendantForPointRange(p, p)
+
+	if node == nil {
+		return nil
+	}
+
+	targetNode := drillDownToLine(node, line-1)
+
+	current := targetNode
+	for current != nil {
+		if current.Type() == "if_statement" {
+			if current.StartPoint().Row+1 <= line && line <= current.EndPoint().Row+1 {
+				return current
+			}
+		}
+		current = current.Parent()
+	}
+
+	return nil
 }
 
 // TODO: use Query to boost the performance
+// line is 1-based
 func findStatementAtLine(tree *sitter.Tree, targetLine uint32) *sitter.Node {
 	if tree == nil || tree.RootNode() == nil {
 		return nil
@@ -191,12 +263,15 @@ func CalculateFuzzerScore(curFileLineCovs []FileLineCov, prevFileLineCovs []File
 			curCount := curLine.Count
 
 			if prevCount == 0 && curCount > 0 {
-				statementNode := findStatementAtLine(tree, lineNum)
-				if statementNode == nil {
-					continue
-				}
-				// log.Println("find statement at", lineNum, "type", statementNode.Type())
-				ifNode := findNearestIfStatement(statementNode)
+				/*
+					statementNode := findStatementAtLine(tree, lineNum)
+					if statementNode == nil {
+						continue
+					}
+					// log.Println("find statement at", lineNum, "type", statementNode.Type())
+					ifNode := findNearestIfStatement(statementNode)
+				*/
+				ifNode := findIfStatementAtLine(tree, lineNum)
 				if ifNode != nil {
 					// log.Println("find an increasing if at", lineNum)
 					/*
@@ -211,8 +286,8 @@ func CalculateFuzzerScore(curFileLineCovs []FileLineCov, prevFileLineCovs []File
 							expression_statement
 					*/
 					body := findIfBody(ifNode)
-					// log.Println(body.StartPoint().Row+1, lineNum, body.EndPoint().Row+1)
-					if body.StartPoint().Row+1 <= lineNum && lineNum <= body.EndPoint().Row+1 {
+					// fmt.Println(body.StartPoint().Row+1, lineNum, body.EndPoint().Row+1)
+					if body != nil && body.StartPoint().Row+1 <= lineNum && lineNum <= body.EndPoint().Row+1 {
 						condition := findIfCondition(ifNode)
 						if condition != nil {
 							constraintType := analyzeIfClause(condition, sourceCode[fileName])

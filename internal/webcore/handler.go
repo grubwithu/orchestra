@@ -26,7 +26,8 @@ type APIResponse struct {
 }
 
 type ResultBody struct {
-	ConstraintGroups []analysis.ConstraintGroup `json:"constraint_groups"`
+	ConstraintGroups []analysis.ConstraintGroup          `json:"constraint_groups"`
+	FuzzerScores     map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
 }
 
 type CorpusReport struct {
@@ -74,7 +75,7 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 	}
 
 	constrains := analysis.IdentifyImportantConstraints(s.CallTree, s.GlobalCov)
-	groups := analysis.GroupConstraintsByFunction(constrains, s.GlobalCov)
+	groups := analysis.GroupConstraintsByFunction(constrains, s.GlobalCov, s.AST, s.SourceCode)
 	sort.Slice(groups, func(i, j int) bool {
 		return groups[i].TotalImportance > groups[j].TotalImportance
 	})
@@ -92,8 +93,12 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 	}
 
 	startTime := time.Now()
+
+	s.FileLineCovsMutex.Lock()
 	score := analysis.CalculateFuzzerScore(lineCov, s.FileLineCovs, s.AST, s.SourceCode)
 	log.Print(fuzzer, " score: ", score, " time passed: ", time.Since(startTime))
+	s.FileLineCovs = lineCov
+	s.FileLineCovsMutex.Unlock()
 
 	s.FuzzerScoresMutex.Lock()
 	s.FuzzerScores[fuzzer] = analysis.UpdateFuzzerScore(score, s.FuzzerScores[fuzzer])
@@ -168,19 +173,16 @@ func (s *Server) handleReportCorpus(c *gin.Context) {
 }
 
 func (s *Server) handlePeekResult(c *gin.Context) {
-	fuzzer := c.Param("fuzzer")
-
 	s.ConstraintGroupsMutex.Lock()
 
 	result := ResultBody{}
 
+	result.ConstraintGroups = s.ConstraintGroups
+
 	s.FuzzerScoresMutex.Lock()
-	if s.FuzzerScores[fuzzer] == nil {
-		log.Println("default constraint group sequence")
-		result.ConstraintGroups = s.ConstraintGroups
-	} else {
-		log.Println("fuzzer-based constraint group sequence")
-		result.ConstraintGroups = analysis.SortConstraintGroup(s.ConstraintGroups, s.FuzzerScores[fuzzer], s.AST, s.SourceCode)
+	result.FuzzerScores = make(map[string]analysis.ConstraintScore)
+	for k := range s.FuzzerScores {
+		result.FuzzerScores[k] = s.FuzzerScores[k].Copy()
 	}
 	s.FuzzerScoresMutex.Unlock()
 
