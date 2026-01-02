@@ -104,7 +104,7 @@ func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server 
 
 func (s *Server) setupRoutes() {
 	s.Router.POST("/reportCorpus", s.handleReportCorpus)
-	s.Router.GET("/peekResult/:fuzzer", s.handlePeekResult)
+	s.Router.GET("/peekResult", s.handlePeekResult)
 }
 
 func (s *Server) Start() error {

@@ -1,11 +1,13 @@
 package analysis
 
 import (
+	"log"
 	"math"
 	"slices"
 	"sort"
 
 	"github.com/google/uuid"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 var (
@@ -31,11 +33,12 @@ type ImportantConstraint struct {
 }
 
 type ConstraintGroup struct {
-	GroupId         string     `json:"group_id"`
-	MainFunction    string     `json:"function"`
-	FileName        string     `json:"file_name"`
-	TotalImportance float64    `json:"importance"`
-	Paths           [][]string `json:"paths"`
+	GroupId         string          `json:"group_id"`
+	MainFunction    string          `json:"function"`
+	FileName        string          `json:"file_name"`
+	TotalImportance float64         `json:"importance"`
+	Paths           [][]string      `json:"paths"`
+	ConstraintScore ConstraintScore `json:"constraint_score"`
 
 	Constraints []ImportantConstraint `json:"-"`
 }
@@ -84,15 +87,10 @@ func IdentifyImportantConstraints(callTree *CallTree, progCovData *ProgCovData) 
 		return constraints[i].ImportanceScore > constraints[j].ImportanceScore
 	})
 
-	cut := MAX_CONSTRAINTS
-	if len(constraints) < MAX_CONSTRAINTS {
-		cut = len(constraints)
-	}
-
-	return constraints[:cut]
+	return constraints
 }
 
-func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *ProgCovData) []ConstraintGroup {
+func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *ProgCovData, ast map[string]*sitter.Tree, sourceCode map[string][]byte) []ConstraintGroup {
 	functionGroups := map[string]*ConstraintGroup{}
 
 	for _, constraint := range constraints {
@@ -119,7 +117,35 @@ func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *
 			slices.Reverse(path)
 			group.Paths = append(group.Paths, path)
 		}
+		group.ConstraintScore = calculateScore(*group, ast, sourceCode)
 		result = append(result, *group)
 	}
-	return result
+
+	cut := MAX_CONSTRAINTS
+	if len(constraints) < MAX_CONSTRAINTS {
+		cut = len(constraints)
+	}
+
+	return result[:cut]
+}
+
+func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCode map[string][]byte) ConstraintScore {
+
+	// check whether ast contains group.FileName
+	tree, hasAST := ast[group.FileName]
+	if !hasAST {
+		log.Println("Warning: cannot find ast of " + group.FileName)
+		return ConstraintScore{}
+	}
+
+	funcNode := findFunctionWithQuery(tree, sourceCode[group.FileName], group.MainFunction)
+	if funcNode == nil {
+		log.Println("Warning: cannot find function " + group.MainFunction + " in file " + group.FileName)
+		return ConstraintScore{}
+	}
+
+	scores := analyzeFunction(funcNode, sourceCode[group.FileName])
+
+	return scores
+
 }

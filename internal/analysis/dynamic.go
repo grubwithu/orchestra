@@ -125,10 +125,28 @@ func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (str
 	cmd := exec.Command(progPath, tempDir, corpusPath, "-merge=1")
 	cmd.Dir = workDir
 	cmd.Stdout = nil
-	cmd.Stderr = nil
+	var outBuffer bytes.Buffer
+	cmd.Stderr = &outBuffer
 
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("command execution failed: %w", err)
+	}
+
+	// There must be a line "MERGE-OUTER: 2 new files with 2321 new features added; 2114 new coverage edges"
+	// Extracting the number before "new coverage edges"
+	lines := strings.Split(outBuffer.String(), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "MERGE-OUTER:") {
+			parts := strings.Split(line, ";")
+			if len(parts) != 2 {
+				continue
+			}
+			coverageEdges, err := strconv.Atoi(strings.TrimSpace(strings.Split(parts[1], "new coverage edges")[0]))
+			if err != nil {
+				continue
+			}
+			log.Println("Covearge Update: ", coverageEdges)
+		}
 	}
 
 	// 3. Find default.profraw in tempDir

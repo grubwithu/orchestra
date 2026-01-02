@@ -29,7 +29,7 @@ Response Body:
 
 
 ## GET
-### /peekResult/:fuzzer
+### /peekResult
 
 Response Body:
 ```json
@@ -42,9 +42,23 @@ Response Body:
         "group_id": "1ca34b37-d225-4944-b981-ab74157e8842",
         "function": "png_handle_sCAL",
         "importance": 0.483546069753371,
-        "paths":[ ["LLVMFuzzerTestOneInput", "png_read_info"] ]
+        "paths":[ ["LLVMFuzzerTestOneInput", "png_read_info"] ],
+        "constraint_score": {
+          "comp_opr": 0.483546069753371,
+          "arith_opr": 0.0,
+          "bitwise_opr": 0.0,
+          "rel_opr": 0.0
+        }
       }
-    ]
+    ],
+    "fuzzer_scores": {
+      "AFL": {
+        "comp_opr": 40.0,
+        "arith_opr": 30.0,
+        "bitwise_opr": 20.0,
+        "rel_opr": 10.0
+      }
+    }
   }
 }
 ```
