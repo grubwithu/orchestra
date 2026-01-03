@@ -9,7 +9,7 @@ cd build
 rm -rf *
 
 # Make sure CC and CXX is specified version
-# Make sure ld is corresponding to the compiler
+# Make sure ld, ar, ranlib is corresponding to the compiler
 
 export CXXFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold -flto -g"
 export CFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold -flto -g"
