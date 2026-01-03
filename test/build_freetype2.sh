@@ -4,9 +4,11 @@ set -e
 cd freetype2
 git checkout cd02d359
 
-wget https://github.com/libarchive/libarchive/releases/download/v3.4.3/libarchive-3.4.3.tar.xz 
-tar -xvf libarchive-3.4.3.tar.xz 
-rm libarchive-3.4.3.tar.xz
+if [ ! -d "libarchive-3.4.3" ]; then
+  wget https://github.com/libarchive/libarchive/releases/download/v3.4.3/libarchive-3.4.3.tar.xz 
+  tar -xvf libarchive-3.4.3.tar.xz 
+  rm libarchive-3.4.3.tar.xz
+fi
 
 pushd libarchive-3.4.3/
 mkdir -p building
