@@ -7,3 +7,6 @@
 [submodule "test/freetype2"]
 	path = test/freetype2
 	url = https://github.com/freetype/freetype.git
+[submodule "test/sqlite3"]
+	path = test/sqlite3
+	url = https://github.com/sqlite/sqlite.git
