@@ -3,7 +3,7 @@ set -e
 
 cleanup() {
   kill $HFC_PID
-  rm -rf tmp_xx223
+  # rm -rf tmp_xx223
 }
 trap cleanup EXIT INT TERM
 
