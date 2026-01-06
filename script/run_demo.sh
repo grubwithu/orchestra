@@ -70,6 +70,9 @@ if [ $SKIP_BUILD -eq 0 ]; then
   elif [ $TARGET == "freetype2" ]; then
     build_freetype2
     PROGNAME=ftfuzzer
+  elif [ $TARGET == "sqlite3" ]; then
+    build_sqlite3
+    PROGNAME=ossfuzz
   else
     echo "Unknown target: $TARGET"
     exit 1
@@ -80,6 +83,8 @@ if [ $TARGET == "libpng" ]; then
   PROGNAME=libpng_read_fuzzer
 elif [ $TARGET == "freetype2" ]; then
   PROGNAME=ftfuzzer
+elif [ $TARGET == "sqlite3" ]; then
+  PROGNAME=ossfuzz
 else
   echo "Unknown target: $TARGET"
   exit 1
