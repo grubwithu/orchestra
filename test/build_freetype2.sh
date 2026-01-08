@@ -55,7 +55,7 @@ ${CC} -fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS -fsanitize=addr
   -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
   ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer_cov \
   ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
-${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer -std=c++11 -lstdc++ \
+${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
   -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
   ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
   ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a \
