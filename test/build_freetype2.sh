@@ -21,6 +21,9 @@ if [ ! -d "libarchive-3.4.3" ]; then
   popd
 fi
 
+mkdir -p src/tools/ftfuzzer/
+wget -O src/tools/ftfuzzer/ftfuzzer.cc https://raw.githubusercontent.com/freetype/freetype2-testing/refs/heads/master/fuzzing/src/legacy/ftfuzzer.cc
+
 bash autogen.sh # preinstall: libtool
 mkdir -p build
 rm -rf build/*
