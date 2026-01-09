@@ -4,11 +4,11 @@ set -e
 cd libpng
 git checkout ba980b8 
 
+DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+
 mkdir -p build
 cd build
 rm -rf *
-
-DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
 
 # Make sure CC and CXX is specified version
 # Make sure ld, ar, ranlib is corresponding to the compiler

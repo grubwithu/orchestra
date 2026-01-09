@@ -4,11 +4,11 @@ set -e
 cd sqlite3
 git checkout 4d9384cba35ce7971431da9b543e0f9d68975947
 
+DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+
 mkdir -p build
 pushd build
 rm -rf *
-
-DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
 
 # Make sure CC and CXX is specified version
 # Make sure ld, ar, ranlib is corresponding to the compiler
@@ -17,7 +17,7 @@ export CXXFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold $DEFAULT_FLAGS"
 
 ../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && FUZZ_INTROSPECTOR=1 make -j && make install
-FUZZ_INTROSPECTOR=1 ${CC} -g -fsanitize=fuzzer -fuse-ld=gold $DEFAULT_FLAGS \
+FUZZ_INTROSPECTOR=1 ${CC} -fsanitize=fuzzer -fuse-ld=gold $DEFAULT_FLAGS \
   -lstdc++ \
   -I$(pwd)/install/include \
   ../test/ossfuzz.c \
