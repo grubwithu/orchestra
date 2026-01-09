@@ -10,3 +10,6 @@
 [submodule "test/sqlite3"]
 	path = test/sqlite3
 	url = https://github.com/sqlite/sqlite.git
+[submodule "test/harfbuzz"]
+	path = test/harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz.git
