@@ -8,14 +8,17 @@ mkdir -p build
 pushd build
 rm -rf *
 
+DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+
 # Make sure CC and CXX is specified version
 # Make sure ld, ar, ranlib is corresponding to the compiler
 
-export CXXFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold -flto -g"
-export CFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold -flto -g"
+export CXXFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold $DEFAULT_FLAGS"
+export CFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold $DEFAULT_FLAGS"
 
 ../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && FUZZ_INTROSPECTOR=1 make -j && make install
-FUZZ_INTROSPECTOR=1 ${CC} -g -fsanitize=fuzzer -fuse-ld=gold -flto -lstdc++ \
+FUZZ_INTROSPECTOR=1 ${CC} -g -fsanitize=fuzzer -fuse-ld=gold $DEFAULT_FLAGS \
+  -lstdc++ \
   -I$(pwd)/install/include \
   ../test/ossfuzz.c \
   -o ossfuzz \
@@ -25,15 +28,17 @@ popd
 mkdir -p build-runtime
 pushd build-runtime
 rm -rf *
-export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link -g"
-export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link -g"
+export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
+export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 ../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j && make install
-${CC} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer -g -lstdc++ \
+${CC} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FLAGS \
+  -lstdc++ \
   -I$(pwd)/install/include \
   ../test/ossfuzz.c \
   -o ossfuzz_cov \
   $(pwd)/install/lib/libsqlite3.a
-${CC} -fsanitize=fuzzer-no-link -g -lstdc++ \
+${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
+  -lstdc++ \
   -I$(pwd)/install/include \
   ../test/ossfuzz.c \
   -o ossfuzz \
