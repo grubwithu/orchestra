@@ -73,6 +73,9 @@ if [ $SKIP_BUILD -eq 0 ]; then
   elif [ $TARGET == "sqlite3" ]; then
     build_sqlite3
     PROGNAME=ossfuzz
+  elif [ $TARGET == "harfbuzz" ]; then
+    build_harfbuzz
+    PROGNAME=hb-shape-fuzzer
   else
     echo "Unknown target: $TARGET"
     exit 1
@@ -85,6 +88,8 @@ elif [ $TARGET == "freetype2" ]; then
   PROGNAME=ftfuzzer
 elif [ $TARGET == "sqlite3" ]; then
   PROGNAME=ossfuzz
+elif [ $TARGET == "harfbuzz" ]; then
+  PROGNAME=hb-shape-fuzzer
 else
   echo "Unknown target: $TARGET"
   exit 1
