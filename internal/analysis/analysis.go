@@ -122,8 +122,8 @@ func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *
 	}
 
 	cut := MAX_CONSTRAINTS
-	if len(constraints) < MAX_CONSTRAINTS {
-		cut = len(constraints)
+	if len(result) < MAX_CONSTRAINTS {
+		cut = len(result)
 	}
 
 	return result[:cut]
