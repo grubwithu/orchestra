@@ -122,7 +122,7 @@ func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (str
 	}
 
 	// 2. Execute shell command
-	cmd := exec.Command(progPath, tempDir, corpusPath, "-merge=1")
+	cmd := exec.Command(progPath, tempDir, corpusPath, "-merge=1", "-rss_limit_mb=0")
 	cmd.Dir = workDir
 	cmd.Stdout = nil
 	var outBuffer bytes.Buffer

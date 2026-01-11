@@ -15,6 +15,7 @@ func main() {
 	executablePath := flag.String("program", "", "Program executable path, format: -program=xx.out")
 	profilePath := flag.String("profile", "", "Program profile file path, format: -profile=fuzzerLogFile-**.yaml")
 	callTreePath := flag.String("calltree", "", "Call tree file path, format: -calltree=fuzzerLogFile-**.data")
+	srcPathMatch := flag.String("srcpath", "build__HFC_qzmp__", "Replace the matched dir name in the source path, format: -srcpath=build__HFC_qzmp__")
 	port := flag.Int("port", 8080, "Port number for the web server (default: 8080), format: -port=8080")
 	help := flag.Bool("h", false, "Display help information")
 
@@ -39,7 +40,7 @@ func main() {
 
 	// Parse the YAML file and get CallTree
 	// TODO: Calculate program profile use AST rather than external profile file
-	staticData, err := analysis.ParseProfileFromYAML(*profilePath)
+	staticData, err := analysis.ParseProfileFromYAML(*profilePath, *srcPathMatch)
 	if err != nil {
 		log.Fatalf("Error parsing YAML: %v\n", err)
 	}

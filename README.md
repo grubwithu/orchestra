@@ -29,3 +29,9 @@ This script will:
   - Link `libfuzzer.a` to the target binary. (We can get `test/freetype2/build-runtime/ftfuzzer` as C)
   - (In fact, three binaries are generated. A is never used. B is used for coverage report in HFC. C is running as pfuzzer.)
 - Run HFC and pfuzzer in parallel.
+
+
+## TODO 26.1.11
+
+1. Use command argument to specify fuzzing strategy.
+2. Add more fuzzing strategies.

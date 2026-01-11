@@ -6,8 +6,8 @@ git checkout ba980b8
 
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
 
-mkdir -p build
-cd build
+mkdir -p build__HFC_qzmp__
+cd build__HFC_qzmp__
 rm -rf *
 
 # Make sure CC and CXX is specified version

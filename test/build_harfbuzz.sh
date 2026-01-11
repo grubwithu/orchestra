@@ -6,8 +6,8 @@ git checkout a1d9bfe
 
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
 
-mkdir -p build
-pushd build
+mkdir -p build__HFC_qzmp__
+pushd build__HFC_qzmp__
 rm -rf *
 export CXXFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link -fuse-ld=gold $DEFAULT_FLAGS"

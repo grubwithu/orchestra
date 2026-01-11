@@ -6,8 +6,8 @@ git checkout 4d9384cba35ce7971431da9b543e0f9d68975947
 
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
 
-mkdir -p build
-pushd build
+mkdir -p build__HFC_qzmp__
+pushd build__HFC_qzmp__
 rm -rf *
 
 # Make sure CC and CXX is specified version

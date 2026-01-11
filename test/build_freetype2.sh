@@ -25,15 +25,15 @@ mkdir -p src/tools/ftfuzzer/
 wget -O src/tools/ftfuzzer/ftfuzzer.cc https://raw.githubusercontent.com/freetype/freetype2-testing/refs/heads/master/fuzzing/src/legacy/ftfuzzer.cc
 
 bash autogen.sh # preinstall: libtool
-mkdir -p build
-rm -rf build/*
+mkdir -p build__HFC_qzmp__
+rm -rf build__HFC_qzmp__/*
 export CXXFLAGS="-fuse-ld=gold $DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
 export CFLAGS="-fuse-ld=gold $DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
 # ../configure --disable-shared --prefix=$(pwd)/install --with-harfbuzz=no --with-bzip2 --with-png --with-zlib --with-brotli
-cmake -B build -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=11 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+cmake -B build__HFC_qzmp__ -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=11 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
   -DCMAKE_INSTALL_PREFIX=$(pwd)/build/install -DFT_DISABLE_BROTLI=TRUE \
   -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE
-pushd build
+pushd build__HFC_qzmp__
 make clean && FUZZ_INTROSPECTOR=1 make -j && make install
 FUZZ_INTROSPECTOR=1 ${CC} $DEFAULT_FLAGS -fsanitize=fuzzer -fuse-ld=gold -std=c++11 \
   -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
