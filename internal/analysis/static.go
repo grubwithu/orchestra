@@ -122,7 +122,7 @@ func (ctn *CallTreeNode) GetReachableDepth() int {
 // }
 
 // ParseYAMLFile parses a YAML file and returns the parsed data
-func ParseProfileFromYAML(filePath string) (*ProgramProfile, error) {
+func ParseProfileFromYAML(filePath string, srcPathMatch string) (*ProgramProfile, error) {
 	// Read the YAML file
 
 	data, err := os.ReadFile(filePath)
@@ -139,6 +139,7 @@ func ParseProfileFromYAML(filePath string) (*ProgramProfile, error) {
 
 	var functions map[string]*FunctionProfile = make(map[string]*FunctionProfile)
 	for _, funcProfile := range programProfile.AllFunctions.Elements {
+		funcProfile.FunctionSourceFile = strings.ReplaceAll(funcProfile.FunctionSourceFile, srcPathMatch, "build-runtime")
 		functions[funcProfile.FunctionName] = funcProfile
 	}
 

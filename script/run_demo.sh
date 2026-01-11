@@ -11,9 +11,9 @@ build_libpng() {
   pushd test/
   bash build_libpng.sh
   ### Prepare other fuzzers
-  cd libpng/build-runtime/
-  docker cp pfuzzer:/libfuzzer/libpng_libpng_read_fuzzer/libpng.tar.gz . # TODO: remove this command
-  tar -zxvf libpng.tar.gz # TODO: remove this command
+  # cd libpng/build-runtime/
+  # docker cp pfuzzer:/libfuzzer/libpng_libpng_read_fuzzer/libpng.tar.gz . # TODO: remove this command
+  # tar -zxvf libpng.tar.gz # TODO: remove this command
   popd
 }
 
@@ -21,9 +21,9 @@ build_freetype2() {
   pushd test/
   bash build_freetype2.sh
   ### Prepare other fuzzers
-  cd freetype2/build-runtime/
-  docker cp pfuzzer:/libfuzzer/freetype2_ftfuzzer/freetype2.tar.gz . # TODO: remove this command
-  tar -zxvf freetype2.tar.gz # TODO: remove this command
+  # cd freetype2/build-runtime/
+  # docker cp pfuzzer:/libfuzzer/freetype2_ftfuzzer/freetype2.tar.gz . # TODO: remove this command
+  # tar -zxvf freetype2.tar.gz # TODO: remove this command
   popd
 }
 
@@ -97,7 +97,7 @@ fi
 
 ## 4. Run HFC
 pushd test/$TARGET/
-pushd build/
+pushd build__HFC_qzmp__/
 DATA_FILE=$(ls ./fuzzerLogFile*.data | head -n 1)
 DATA_FILE_ABS=$(realpath $DATA_FILE)
 YAML_FILE=$(ls ./fuzzerLogFile*.yaml | head -n 1)
