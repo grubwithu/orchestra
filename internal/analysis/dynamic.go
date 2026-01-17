@@ -22,8 +22,6 @@ type FuncCov struct {
 }
 
 type ProgCovData struct {
-	CorpusCount int
-
 	// Files
 	Functions []FuncCov `json:"functions"`
 	// totals
@@ -108,17 +106,17 @@ func llvmLineCovPreprocess(output string) []FileLineCov {
 
 }
 
-func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (string, error) {
+func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (int, string, error) {
 	tempDir, err := os.MkdirTemp(workDir, "corpus")
 	if err != nil {
-		return "", fmt.Errorf("failed to create corpus directory: %w", err)
+		return 0, "", fmt.Errorf("failed to create corpus directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	// Transform programPath to absolute path
 	progPath, err = filepath.Abs(progPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to get absolute path of program: %w", err)
+		return 0, "", fmt.Errorf("failed to get absolute path of program: %w", err)
 	}
 
 	// 2. Execute shell command
@@ -129,12 +127,13 @@ func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (str
 	cmd.Stderr = &outBuffer
 
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("command execution failed: %w", err)
+		return 0, "", fmt.Errorf("command execution failed: %w", err)
 	}
 
 	// There must be a line "MERGE-OUTER: 2 new files with 2321 new features added; 2114 new coverage edges"
 	// Extracting the number before "new coverage edges"
 	lines := strings.Split(outBuffer.String(), "\n")
+	cov := 0
 	for _, line := range lines {
 		if strings.HasPrefix(line, "MERGE-OUTER:") {
 			parts := strings.Split(line, ";")
@@ -146,13 +145,14 @@ func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (str
 				continue
 			}
 			log.Println("Covearge Update: ", coverageEdges)
+			cov = coverageEdges
 		}
 	}
 
 	// 3. Find default.profraw in tempDir
 	defaultProfrawPath := filepath.Join(workDir, "default.profraw")
 	if _, err := os.Stat(defaultProfrawPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("default.profraw not found in %s", workDir)
+		return cov, "", fmt.Errorf("default.profraw not found in %s", workDir)
 	}
 
 	// 4. Running command to process default.profraw
@@ -161,10 +161,10 @@ func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (str
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("command execution failed: %w", err)
+		return cov, "", fmt.Errorf("command execution failed: %w", err)
 	}
 
-	return filepath.Join(workDir, "merged_cov.profdata"), nil
+	return cov, filepath.Join(workDir, "merged_cov.profdata"), nil
 }
 
 func GetProgCov(workDir string, progPath string, profdataPath string) (ProgCovData, error) {

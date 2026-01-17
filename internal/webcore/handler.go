@@ -28,6 +28,7 @@ type APIResponse struct {
 type ResultBody struct {
 	ConstraintGroups []analysis.ConstraintGroup          `json:"constraint_groups"`
 	FuzzerScores     map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
+	FuzzerCovInc     map[string]int                      `json:"fuzzer_cov_inc"`
 }
 
 type CorpusReport struct {
@@ -44,22 +45,32 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 		return
 	}
 	defer os.RemoveAll(workDir)
-	profdataPath, err := analysis.RunOnceForProfdata(workDir, *s.Executable, corpus)
+	cov, profdataPath, err := analysis.RunOnceForProfdata(workDir, *s.Executable, corpus)
 	if err != nil {
 		log.Printf("Error running analysis on corpus item %s for task %s: %v\n", corpus, taskID, err)
 		return
 	}
-	coverage, err := analysis.GetProgCov(workDir, *s.Executable, profdataPath)
+	progCovData, err := analysis.GetProgCov(workDir, *s.Executable, profdataPath)
 	if err != nil {
 		log.Printf("Error running analysis on corpus item %s for task %s: %v\n", corpus, taskID, err)
 	}
 
+	s.FuzzerCovsMutex.Lock()
+	// update fuzzer covs
+	if _, ok := s.FuzzerCovs[fuzzer]; !ok {
+		s.FuzzerCovs[fuzzer] = []int{s.FuzzerCovs["__init__"][0], cov}
+	} else {
+		s.FuzzerCovs[fuzzer] = append(s.FuzzerCovs[fuzzer], cov)
+	}
+
+	s.FuzzerCovsMutex.Unlock()
+
 	s.GlobalCovMutex.Lock()
 	if s.GlobalCov == nil {
-		s.GlobalCov = &coverage
+		s.GlobalCov = &progCovData
 	} else {
-		s.GlobalCov.CorpusCount += coverage.CorpusCount
-		for _, funcCoverage := range coverage.Functions {
+		// s.GlobalCov.CorpusCount += coverage.CorpusCount
+		for _, funcCoverage := range progCovData.Functions {
 			existing := false
 			for i := range s.GlobalCov.Functions {
 				if s.GlobalCov.Functions[i].Name == funcCoverage.Name {
@@ -104,7 +115,7 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 	s.FuzzerScores[fuzzer] = analysis.UpdateFuzzerScore(score, s.FuzzerScores[fuzzer])
 	s.FuzzerScoresMutex.Unlock()
 
-	log.Printf("Processed corpus item %s for task %s. Global corpus count: %d\n", corpus, taskID, s.GlobalCov.CorpusCount)
+	log.Printf("Processed corpus item %s for task %s.\n", corpus, taskID)
 
 }
 
@@ -185,6 +196,17 @@ func (s *Server) handlePeekResult(c *gin.Context) {
 		result.FuzzerScores[k] = s.FuzzerScores[k].Copy()
 	}
 	s.FuzzerScoresMutex.Unlock()
+
+	s.FuzzerCovsMutex.Lock()
+	result.FuzzerCovInc = make(map[string]int)
+	for k := range s.FuzzerCovs {
+		length := len(s.FuzzerCovs[k])
+		if length > 1 {
+			log.Println(s.FuzzerCovs[k])
+			result.FuzzerCovInc[k] = s.FuzzerCovs[k][length-1] - s.FuzzerCovs[k][length-2]
+		}
+	}
+	s.FuzzerCovsMutex.Unlock()
 
 	c.JSON(http.StatusOK, APIResponse{
 		Success: true,

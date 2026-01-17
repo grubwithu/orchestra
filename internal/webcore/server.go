@@ -37,6 +37,8 @@ type Server struct {
 	FileLineCovs          []analysis.FileLineCov
 	FuzzerScoresMutex     sync.Mutex
 	FuzzerScores          map[string]analysis.ConstraintScore
+	FuzzerCovsMutex       sync.Mutex // mutex for fuzzer coverage
+	FuzzerCovs            map[string][]int
 }
 
 func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server {
@@ -59,10 +61,12 @@ func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server 
 	}
 
 	// 3. use RunOnce in dynamic.go
-	profdataPath, err := analysis.RunOnceForProfdata(workDir, *progPath, corpusDir)
+	cov, profdataPath, err := analysis.RunOnceForProfdata(workDir, *progPath, corpusDir)
 	if err != nil {
 		log.Fatal("error running executable file: ", err)
 	}
+	fuzzerCovs := make(map[string][]int)
+	fuzzerCovs["__init__"] = []int{cov}
 
 	// 3. use GetLineCov in dynamic.go
 	fileLineCovs, err := analysis.GetLineCov(workDir, *progPath, profdataPath)
@@ -97,6 +101,7 @@ func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server 
 		SourceCode:   sourceCode,
 		FileLineCovs: fileLineCovs,
 		FuzzerScores: make(map[string]analysis.ConstraintScore),
+		FuzzerCovs:   fuzzerCovs,
 	}
 	server.setupRoutes()
 	return server

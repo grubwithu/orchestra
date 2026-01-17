@@ -238,7 +238,7 @@ func GetProgramAST(executablePath string) (map[string]*sitter.Tree, error) {
 	}
 
 	// 3. use RunOnce in dynamic.go
-	profdataPath, err := RunOnceForProfdata(workDir, executablePath, corpusDir)
+	_, profdataPath, err := RunOnceForProfdata(workDir, executablePath, corpusDir)
 	if err != nil {
 		return nil, fmt.Errorf("error running executable file: %w", err)
 	}
