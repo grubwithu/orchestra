@@ -58,6 +58,9 @@ Response Body:
         "bitwise_opr": 20.0,
         "rel_opr": 10.0
       }
+    },
+    "fuzzer_cov_inc": {
+      "AFL": 100
     }
   }
 }

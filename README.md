@@ -33,5 +33,7 @@ This script will:
 
 ## TODO 26.1.11
 
-1. Use command argument to specify fuzzing strategy.
-2. Add more fuzzing strategies.
+1. [pfuzzer] Use command argument to specify fuzzing strategy.
+2. [pfuzzer] Add more fuzzing strategies.
+3. [HFC] C++ support: parse name like `_ZN....`. (Go support is not complete.)
+4. [HFC] Record coverage increase or decrease for every fuzzers.
