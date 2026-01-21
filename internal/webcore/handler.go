@@ -25,13 +25,7 @@ type APIResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-type ResultBody struct {
-	ConstraintGroups []analysis.ConstraintGroup          `json:"constraint_groups"`
-	FuzzerScores     map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
-	FuzzerCovInc     map[string]int                      `json:"fuzzer_cov_inc"`
-}
-
-type CorpusReport struct {
+type CorpusReportReqBody struct {
 	Fuzzer   string   `json:"fuzzer"`
 	Identity string   `json:"identity"`
 	Corpus   []string `json:"corpus"`
@@ -124,7 +118,7 @@ type ReportCorpusResponse struct {
 }
 
 func (s *Server) handleReportCorpus(c *gin.Context) {
-	var report CorpusReport
+	var report CorpusReportReqBody
 
 	if err := c.ShouldBindJSON(&report); err != nil {
 		c.JSON(http.StatusBadRequest, APIResponse{
@@ -183,10 +177,16 @@ func (s *Server) handleReportCorpus(c *gin.Context) {
 
 }
 
+type PeekResultResBody struct {
+	ConstraintGroups []analysis.ConstraintGroup          `json:"constraint_groups"`
+	FuzzerScores     map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
+	FuzzerCovInc     map[string]int                      `json:"fuzzer_cov_inc"`
+}
+
 func (s *Server) handlePeekResult(c *gin.Context) {
 	s.ConstraintGroupsMutex.Lock()
 
-	result := ResultBody{}
+	result := PeekResultResBody{}
 
 	result.ConstraintGroups = s.ConstraintGroups
 
@@ -215,5 +215,29 @@ func (s *Server) handlePeekResult(c *gin.Context) {
 	})
 
 	s.ConstraintGroupsMutex.Unlock()
+
+}
+
+type LogReqBody struct {
+	Log string `json:"log"`
+}
+
+func (s *Server) handleLog(c *gin.Context) {
+
+	var logReq LogReqBody
+	if err := c.ShouldBindJSON(&logReq); err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+	// just print the log
+	log.Println(logReq.Log)
+	// return success
+	c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Message: "Log received successfully",
+	})
 
 }
