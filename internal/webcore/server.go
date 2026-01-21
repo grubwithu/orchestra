@@ -110,6 +110,7 @@ func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server 
 func (s *Server) setupRoutes() {
 	s.Router.POST("/reportCorpus", s.handleReportCorpus)
 	s.Router.GET("/peekResult", s.handlePeekResult)
+	s.Router.POST("/log", s.handleLog)
 }
 
 func (s *Server) Start() error {

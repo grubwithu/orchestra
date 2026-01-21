@@ -33,7 +33,13 @@ This script will:
 
 ## TODO 26.1.11
 
-1. [pfuzzer] Use command argument to specify fuzzing strategy.
+1. [pfuzzer] Use command argument to specify fuzzing strategy. (DONE)
 2. [pfuzzer] Add more fuzzing strategies.
 3. [HFC] C++ support: parse name like `_ZN....`. (Go support is not complete.)
-4. [HFC] Record coverage increase or decrease for every fuzzers.
+4. [HFC] Record coverage increase or decrease for every fuzzers. (DONE)
+
+## TODO 26.1.19
+
+1. [pfuzzer] Modify `GetJobSeeds` to support fuzzing strategy.
+2. [HFC] Add more methods to choose constraint group 
+
