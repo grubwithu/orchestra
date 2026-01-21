@@ -35,8 +35,9 @@ else
   BUILD_ARGS=""
 fi
 
-bash build_sqlite3.sh $BUILD_ARGS
-bash build_libpng.sh $BUILD_ARGS
-bash build_freetype2.sh $BUILD_ARGS
+bash build_sqlite3.sh $BUILD_ARGS &
+bash build_libpng.sh $BUILD_ARGS &
+bash build_freetype2.sh $BUILD_ARGS &
 bash build_harfbuzz.sh $BUILD_ARGS
 
+wait
