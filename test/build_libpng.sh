@@ -1,10 +1,34 @@
 #!/bin/bash
 set -e
 
+UPDATE_PFUZZER=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --update-pfuzzer)
+      UPDATE_PFUZZER=1
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
 cd libpng
 git checkout ba980b8 
 
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+
+if [ $UPDATE_PFUZZER -eq 1 ]; then
+  cd build-runtime
+  ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
+    -I$(pwd)/install/include \
+    ../contrib/oss-fuzz/libpng_read_fuzzer.cc \
+    ../../../pfuzzer/build/libfuzzer.a \
+    .libs/libpng16.a -lz -lm -lstdc++ \
+    -o libpng_read_fuzzer
+  exit 0
+fi
 
 mkdir -p build__HFC_qzmp__
 cd build__HFC_qzmp__
