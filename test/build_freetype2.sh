@@ -1,10 +1,34 @@
 #!/bin/bash
 set -e
 
+UPDATE_PFUZZER=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --update-pfuzzer)
+      UPDATE_PFUZZER=1
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+
 cd freetype2
 git checkout 94cb3a2eb96b3f17a1a3bd0e6f7da97c0e1d8f57
 
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+
+if [ $UPDATE_PFUZZER -eq 1 ]; then
+  cd build-runtime
+  ${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
+    -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
+    ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
+    ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a \
+    ../../../pfuzzer/build/libfuzzer.a
+  exit 0
+fi
 
 if [ ! -d "libarchive-3.4.3" ]; then
   wget https://github.com/libarchive/libarchive/releases/download/v3.4.3/libarchive-3.4.3.tar.xz 

@@ -1,10 +1,35 @@
 #!/bin/bash
 set -e
 
+UPDATE_PFUZZER=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --update-pfuzzer)
+      UPDATE_PFUZZER=1
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
 cd sqlite3
 git checkout 4d9384cba35ce7971431da9b543e0f9d68975947
 
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+
+if [ $UPDATE_PFUZZER -eq 1 ]; then
+  cd build-runtime
+  ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
+    -lstdc++ \
+    -I$(pwd)/install/include \
+    ../test/ossfuzz.c \
+    -o ossfuzz \
+    $(pwd)/install/lib/libsqlite3.a \
+    ../../../pfuzzer/build/libfuzzer.a
+  exit 0
+fi
 
 mkdir -p build__HFC_qzmp__
 pushd build__HFC_qzmp__
