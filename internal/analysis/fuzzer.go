@@ -336,14 +336,7 @@ func CalculateFuzzerScore(
 					// log.Println("find statement at", lineNum, "type", statementNode.Type())
 					ifNode := findNearestIfStatement(statementNode)
 				*/
-				functionName := getFunctionName(findFunctionAtLine(tree, lineNum), sourceCode[fileName])
-				// log.Println("New line in function ", functionName, " at ", lineNum)
-
-				if arrutil.Contains(importantFunctions, functionName) {
-					ImportantIncreaseCount++
-				}
-				AllIncreaseCount++
-
+				jumpLine := 0
 				ifNode := findIfStatementAtLine(tree, lineNum)
 				if ifNode != nil {
 					// log.Println("find an increasing if at", lineNum)
@@ -367,10 +360,19 @@ func CalculateFuzzerScore(
 							score[constraintType] += 1.0
 						}
 					}
-
+					jumpLine = int(ifNode.EndPoint().Row) - index
 					index = int(ifNode.EndPoint().Row)
 					// log.Println("jump to ", index)
 				}
+
+				functionName := getFunctionName(findFunctionAtLine(tree, lineNum), sourceCode[fileName])
+				// log.Println("New line in function ", functionName, " at ", lineNum)
+
+				if arrutil.Contains(importantFunctions, functionName) {
+					ImportantIncreaseCount += jumpLine + 1
+				}
+				AllIncreaseCount += jumpLine + 1
+
 			}
 		}
 	}
