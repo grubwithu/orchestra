@@ -6,10 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"sort"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/gookit/goutil/maputil"
 	"github.com/grubwithu/hfc/internal/analysis"
 )
 
@@ -88,7 +88,21 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 	s.GlobalCovMutex.Unlock()
 
 	s.ConstraintGroupsMutex.Lock()
-	s.ConstraintGroups = groups
+	functions := make(map[string]int)
+	for index, group := range s.ConstraintGroups {
+		functions[group.MainFunction] = index
+	}
+	for _, group := range groups {
+		function := group.MainFunction
+		if _, ok := functions[function]; ok {
+			s.ConstraintGroups[functions[function]] = group
+		} else {
+			s.ConstraintGroups = append(s.ConstraintGroups, group)
+		}
+	}
+	sort.Slice(s.ConstraintGroups, func(i, j int) bool {
+		return s.ConstraintGroups[i].TotalImportance > s.ConstraintGroups[j].TotalImportance
+	})
 	s.ConstraintGroupsMutex.Unlock()
 
 	lineCov, err := analysis.GetLineCov(workDir, *s.Executable, profdataPath)
@@ -97,11 +111,8 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 		return
 	}
 
-	startTime := time.Now()
-
 	s.FileLineCovsMutex.Lock()
-	score := analysis.CalculateFuzzerScore(lineCov, s.FileLineCovs, s.AST, s.SourceCode)
-	log.Print(fuzzer, " score: ", score, " time passed: ", time.Since(startTime))
+	score := analysis.CalculateFuzzerScore(fuzzer, lineCov, s.FileLineCovs, s.AST, s.SourceCode, maputil.Keys(functions))
 	s.FileLineCovs = lineCov
 	s.FileLineCovsMutex.Unlock()
 

@@ -29,8 +29,12 @@ build_freetype2() {
 
 # Make sure that the script is run from the root directory of the project
 ## 0. Check argument
+TARGET=$1
+shift
+
 SKIP_BUILD=0
 HFC_ONLY=0
+PASS_ARGS=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --skip-build)
@@ -42,7 +46,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      TARGET=$1
+      PASS_ARGS+="$1 "
       shift
       ;;
   esac

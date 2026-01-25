@@ -121,6 +121,10 @@ func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *
 		result = append(result, *group)
 	}
 
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].TotalImportance > result[j].TotalImportance
+	})
+
 	cut := MAX_CONSTRAINTS
 	if len(result) < MAX_CONSTRAINTS {
 		cut = len(result)
