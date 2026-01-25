@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gookit/goutil/arrutil"
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/smacker/go-tree-sitter/cpp"
 )
@@ -72,6 +73,60 @@ func drillDownToLine(node *sitter.Node, targetLine uint32) *sitter.Node {
 	}
 
 	return node
+}
+
+func findFunctionAtLine(tree *sitter.Tree, line uint32) *sitter.Node {
+	if tree == nil || tree.RootNode() == nil {
+		return nil
+	}
+
+	p := sitter.Point{Row: line - 1, Column: 0}
+	root := tree.RootNode()
+	node := root.NamedDescendantForPointRange(p, p)
+
+	if node == nil {
+		return nil
+	}
+
+	targetNode := drillDownToLine(node, line-1)
+
+	current := targetNode
+	for current != nil {
+		if current.Type() == "function_definition" {
+			if current.StartPoint().Row+1 <= line && line <= current.EndPoint().Row+1 {
+				return current
+			}
+		}
+		current = current.Parent()
+	}
+
+	return nil
+}
+
+func getFunctionName(node *sitter.Node, sourceCode []byte) string {
+	if node == nil {
+		return ""
+	}
+
+	if node.Type() == "function_definition" {
+		for i := 0; i < int(node.ChildCount()); i++ {
+			child := node.Child(i)
+			if child.Type() == "function_declarator" {
+				return getFunctionName(child, sourceCode)
+			}
+		}
+	} else if node.Type() == "function_declarator" {
+		for i := 0; i < int(node.ChildCount()); i++ {
+			child := node.Child(i)
+			if child.Type() == "identifier" {
+				return getFunctionName(child, sourceCode)
+			}
+		}
+	} else if node.Type() == "identifier" {
+		return node.Content(sourceCode)
+	}
+
+	return ""
 }
 
 // line is 1-based
@@ -219,7 +274,14 @@ func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 	return CT_COMPOUND_OPERATION
 }
 
-func CalculateFuzzerScore(curFileLineCovs []FileLineCov, prevFileLineCovs []FileLineCov, ast map[string]*sitter.Tree, sourceCode map[string][]byte) ConstraintScore {
+func CalculateFuzzerScore(
+	fuzzerName string,
+	curFileLineCovs []FileLineCov,
+	prevFileLineCovs []FileLineCov,
+	ast map[string]*sitter.Tree,
+	sourceCode map[string][]byte,
+	importantFunctions []string,
+) ConstraintScore {
 	score := ConstraintScore{
 		CT_VALUE_COMPARISON:     0,
 		CT_BITWISE_OPERATION:    0,
@@ -227,6 +289,9 @@ func CalculateFuzzerScore(curFileLineCovs []FileLineCov, prevFileLineCovs []File
 		CT_ARITHMETIC_OPERATION: 0,
 		CT_COMPOUND_OPERATION:   0,
 	}
+
+	AllIncreaseCount := 0
+	ImportantIncreaseCount := 0
 
 	for i := range curFileLineCovs {
 		curFileLineCov := &curFileLineCovs[i]
@@ -271,6 +336,14 @@ func CalculateFuzzerScore(curFileLineCovs []FileLineCov, prevFileLineCovs []File
 					// log.Println("find statement at", lineNum, "type", statementNode.Type())
 					ifNode := findNearestIfStatement(statementNode)
 				*/
+				functionName := getFunctionName(findFunctionAtLine(tree, lineNum), sourceCode[fileName])
+				// log.Println("New line in function ", functionName, " at ", lineNum)
+
+				if arrutil.Contains(importantFunctions, functionName) {
+					ImportantIncreaseCount++
+				}
+				AllIncreaseCount++
+
 				ifNode := findIfStatementAtLine(tree, lineNum)
 				if ifNode != nil {
 					// log.Println("find an increasing if at", lineNum)
@@ -301,7 +374,7 @@ func CalculateFuzzerScore(curFileLineCovs []FileLineCov, prevFileLineCovs []File
 			}
 		}
 	}
-
+	log.Println("Fuzzer", fuzzerName, "find", AllIncreaseCount, "increases in total,", ImportantIncreaseCount, "of them are important")
 	// log.Printf("Fuzzer score calculated: %+v", score)
 	return score
 }
