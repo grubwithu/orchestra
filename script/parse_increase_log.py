@@ -41,6 +41,8 @@ def main():
                         start_time = cur_time
                     # Get passed_time (Hours)
                     passed_time = (cur_time - start_time).total_seconds() / 3600
+                    if passed_time < START_HOUR or passed_time > END_HOUR:
+                        continue
                     fuzzer_name = match.group(2)
                     total_increases += int(match.group(3))
                     important_increases += int(match.group(4))
