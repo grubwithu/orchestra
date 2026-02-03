@@ -48,10 +48,7 @@ def main():
                     important_increases += int(match.group(4))
                     
                     # 打印提取的信息（可以根据需要进行后续处理）
-                    print(f"Line {line_num}: Fuzzer={fuzzer_name}, Total={total_increases}, Important={important_increases}")
-                else:
-                    # 可选：处理不匹配的行
-                    print(f"Line {line_num}: No match found")
+                    print(f"{timestamp} Line {line_num}: Fuzzer={fuzzer_name}, Total={total_increases}, Important={important_increases}")
                     
     except FileNotFoundError:
         print(f"Error: File '{log_file_path}' not found.")
