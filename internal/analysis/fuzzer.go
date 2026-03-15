@@ -13,11 +13,23 @@ import (
 type ConstraintType string
 
 const (
-	CT_VALUE_COMPARISON     ConstraintType = "val_cmp"  // value comparison
-	CT_BITWISE_OPERATION    ConstraintType = "bit_opr"  // bitwise operation
-	CT_STRING_MATCH         ConstraintType = "str_mat"  // string match
-	CT_ARITHMETIC_OPERATION ConstraintType = "art_opr"  // arithmetic operation
-	CT_COMPOUND_OPERATION   ConstraintType = "comp_opr" // compound operation
+	// 值比较类
+	CT_EQUALITY_COMPARISON    ConstraintType = "eq_cmp"   // equality comparison (==, !=)
+	CT_RELATIONAL_COMPARISON  ConstraintType = "rel_cmp"  // relational comparison (<, >, <=, >=)
+	
+	// 运算类
+	CT_ARITHMETIC_BASIC      ConstraintType = "arith_basic" // basic arithmetic (+, -, *, /, %)
+	CT_BITWISE_OPERATION     ConstraintType = "bit_opr"     // bitwise operation (&, |, ^, ~, <<, >>)
+	CT_LOGICAL_OPERATION     ConstraintType = "logical_opr" // logical operation (&&, ||, !)
+	
+	// 字符串类
+	CT_STRING_EXACT_MATCH    ConstraintType = "str_exact"  // exact string match (strcmp, ==)
+	CT_STRING_PATTERN_MATCH  ConstraintType = "str_pattern" // pattern string match (strstr, strncmp, memcmp)
+	
+	// 复杂类型
+	CT_POINTER_COMPARISON    ConstraintType = "ptr_cmp"    // pointer comparison
+	CT_TYPE_CONVERSION       ConstraintType = "type_conv"  // type conversion/check
+	CT_COMPOUND_CONDITION    ConstraintType = "comp_cond"  // compound condition
 )
 
 type ConstraintScore map[ConstraintType]float64
@@ -241,37 +253,102 @@ func findIfBody(node *sitter.Node) *sitter.Node {
 // analyzeIfClause 分析if语句的条件表达式，确定约束类型
 func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 	if condition == nil {
-		return CT_COMPOUND_OPERATION
+		return CT_COMPOUND_CONDITION
 	}
 
 	conditionCode := condition.Content(sourceCode)
+	
+	// 转换为小写便于匹配
+	lowerCode := strings.ToLower(conditionCode)
 
-	// 分析条件表达式的内容
-	if strings.Contains(conditionCode, "strcmp") || strings.Contains(conditionCode, "strstr") ||
-		strings.Contains(conditionCode, "strncmp") || strings.Contains(conditionCode, "memcmp") ||
-		strings.Contains(conditionCode, "\"") || strings.Contains(conditionCode, "'") {
-		return CT_STRING_MATCH
+	// 1. 检查字符串操作
+	hasStringLiteral := strings.Contains(conditionCode, "\"") || strings.Contains(conditionCode, "'")
+	hasStrcmp := strings.Contains(lowerCode, "strcmp")
+	hasStrncmp := strings.Contains(lowerCode, "strncmp")
+	hasMemcmp := strings.Contains(lowerCode, "memcmp")
+	hasStrstr := strings.Contains(lowerCode, "strstr")
+	
+	if hasStrcmp || hasStrncmp || hasMemcmp {
+		// 精确字符串匹配
+		return CT_STRING_EXACT_MATCH
+	}
+	
+	if hasStrstr {
+		// 模式匹配
+		return CT_STRING_PATTERN_MATCH
+	}
+	
+	if hasStringLiteral {
+		// 如果有字符串字面量但没识别到字符串函数，可能是直接比较
+		return CT_STRING_EXACT_MATCH
 	}
 
+	// 2. 检查指针操作
+	if strings.Contains(conditionCode, "*") && (strings.Contains(conditionCode, "==") || 
+		strings.Contains(conditionCode, "!=") || strings.Contains(conditionCode, ">") || 
+		strings.Contains(conditionCode, "<") || strings.Contains(conditionCode, ">=") || 
+		strings.Contains(conditionCode, "<=")) {
+		// 检查是否是指针比较（排除乘法运算）
+		codeWithoutSpaces := strings.ReplaceAll(conditionCode, " ", "")
+		if strings.Contains(codeWithoutSpaces, "*==") || strings.Contains(codeWithoutSpaces, "*!=") ||
+			strings.Contains(codeWithoutSpaces, "*>") || strings.Contains(codeWithoutSpaces, "*<") ||
+			strings.Contains(codeWithoutSpaces, "*>=") || strings.Contains(codeWithoutSpaces, "*<=") ||
+			strings.Contains(conditionCode, "->") {
+			return CT_POINTER_COMPARISON
+		}
+	}
+
+	// 3. 检查类型转换
+	if strings.Contains(lowerCode, "sizeof") || strings.Contains(lowerCode, "typeid") ||
+		strings.Contains(lowerCode, "dynamic_cast") || strings.Contains(lowerCode, "static_cast") ||
+		strings.Contains(lowerCode, "reinterpret_cast") || strings.Contains(lowerCode, "const_cast") ||
+		strings.Contains(conditionCode, "(") && strings.Contains(conditionCode, ")") {
+		// 简单的类型转换检查
+		return CT_TYPE_CONVERSION
+	}
+
+	// 4. 检查逻辑运算
+	if strings.Contains(conditionCode, "&&") || strings.Contains(conditionCode, "||") ||
+		strings.Contains(conditionCode, "!") && !strings.Contains(conditionCode, "!=") {
+		return CT_LOGICAL_OPERATION
+	}
+
+	// 5. 检查比较运算符
+	hasEquality := strings.Contains(conditionCode, "==") || strings.Contains(conditionCode, "!=")
+	hasRelational := strings.Contains(conditionCode, ">") || strings.Contains(conditionCode, "<") ||
+		strings.Contains(conditionCode, ">=") || strings.Contains(conditionCode, "<=")
+	
+	if hasEquality && !hasRelational {
+		// 只有等值比较
+		return CT_EQUALITY_COMPARISON
+	}
+	
+	if hasRelational && !hasEquality {
+		// 只有关系比较
+		return CT_RELATIONAL_COMPARISON
+	}
+	
+	if hasEquality && hasRelational {
+		// 混合比较，可能是复杂条件
+		return CT_COMPOUND_CONDITION
+	}
+
+	// 6. 检查算术运算
 	if strings.Contains(conditionCode, "+") || strings.Contains(conditionCode, "-") ||
 		strings.Contains(conditionCode, "*") || strings.Contains(conditionCode, "/") ||
 		strings.Contains(conditionCode, "%") {
-		return CT_ARITHMETIC_OPERATION
+		return CT_ARITHMETIC_BASIC
 	}
 
+	// 7. 检查位运算
 	if strings.Contains(conditionCode, "&") || strings.Contains(conditionCode, "|") ||
 		strings.Contains(conditionCode, "^") || strings.Contains(conditionCode, "~") ||
 		strings.Contains(conditionCode, "<<") || strings.Contains(conditionCode, ">>") {
 		return CT_BITWISE_OPERATION
 	}
 
-	if strings.Contains(conditionCode, "==") || strings.Contains(conditionCode, "!=") ||
-		strings.Contains(conditionCode, ">") || strings.Contains(conditionCode, "<") ||
-		strings.Contains(conditionCode, ">=") || strings.Contains(conditionCode, "<=") {
-		return CT_VALUE_COMPARISON
-	}
-
-	return CT_COMPOUND_OPERATION
+	// 8. 默认返回复合条件
+	return CT_COMPOUND_CONDITION
 }
 
 func CalculateFuzzerScore(
@@ -283,11 +360,23 @@ func CalculateFuzzerScore(
 	importantFunctions []string,
 ) ConstraintScore {
 	score := ConstraintScore{
-		CT_VALUE_COMPARISON:     0,
-		CT_BITWISE_OPERATION:    0,
-		CT_STRING_MATCH:         0,
-		CT_ARITHMETIC_OPERATION: 0,
-		CT_COMPOUND_OPERATION:   0,
+		// 值比较类
+		CT_EQUALITY_COMPARISON:   0,
+		CT_RELATIONAL_COMPARISON: 0,
+		
+		// 运算类
+		CT_ARITHMETIC_BASIC:      0,
+		CT_BITWISE_OPERATION:     0,
+		CT_LOGICAL_OPERATION:     0,
+		
+		// 字符串类
+		CT_STRING_EXACT_MATCH:    0,
+		CT_STRING_PATTERN_MATCH:  0,
+		
+		// 复杂类型
+		CT_POINTER_COMPARISON:    0,
+		CT_TYPE_CONVERSION:       0,
+		CT_COMPOUND_CONDITION:    0,
 	}
 
 	AllIncreaseCount := 0
