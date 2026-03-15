@@ -29,9 +29,10 @@ type CorpusReportReqBody struct {
 	Fuzzer   string   `json:"fuzzer"`
 	Identity string   `json:"identity"`
 	Corpus   []string `json:"corpus"`
+	Period   string   `json:"period,omitempty"` // "begin" or "end", optional
 }
 
-func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
+func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string, period string) {
 
 	workDir, err := os.MkdirTemp("", "hfc_work_")
 	if err != nil {
@@ -39,6 +40,9 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 		return
 	}
 	defer os.RemoveAll(workDir)
+	
+	log.Printf("Processing corpus for task %s, fuzzer: %s, period: %s\n", taskID, fuzzer, period)
+	
 	cov, profdataPath, err := analysis.RunOnceForProfdata(workDir, *s.Executable, corpus)
 	if err != nil {
 		log.Printf("Error running analysis on corpus item %s for task %s: %v\n", corpus, taskID, err)
@@ -51,10 +55,22 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 
 	s.FuzzerCovsMutex.Lock()
 	// update fuzzer covs
-	if _, ok := s.FuzzerCovs[fuzzer]; !ok {
-		s.FuzzerCovs[fuzzer] = []int{s.FuzzerCovs["__init__"][0], cov}
+	if period == "begin" {
+		// For begin period, we might want to reset or start fresh tracking
+		log.Printf("Period 'begin' for fuzzer: %s. Initializing coverage tracking.\n", fuzzer)
+		s.FuzzerCovs[fuzzer] = []int{cov}  // Start fresh for this period
 	} else {
-		s.FuzzerCovs[fuzzer] = append(s.FuzzerCovs[fuzzer], cov)
+		// For end period or no period specified, append to existing coverage
+		if _, ok := s.FuzzerCovs[fuzzer]; !ok {
+			// If fuzzer doesn't exist yet, initialize with __init__ as starting point
+			if initCov, hasInit := s.FuzzerCovs["__init__"]; hasInit && len(initCov) > 0 {
+				s.FuzzerCovs[fuzzer] = []int{initCov[0], cov}
+			} else {
+				s.FuzzerCovs[fuzzer] = []int{cov}
+			}
+		} else {
+			s.FuzzerCovs[fuzzer] = append(s.FuzzerCovs[fuzzer], cov)
+		}
 	}
 
 	s.FuzzerCovsMutex.Unlock()
@@ -63,6 +79,12 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 	if s.GlobalCov == nil {
 		s.GlobalCov = &progCovData
 	} else {
+		// Handle global coverage based on period
+		if period == "begin" {
+			// For begin period, we might want to track coverage separately or reset
+			log.Println("Period 'begin' detected. Starting new coverage tracking.")
+			// We could start fresh tracking or mark this as a baseline
+		}
 		// s.GlobalCov.CorpusCount += coverage.CorpusCount
 		for _, funcCoverage := range progCovData.Functions {
 			existing := false
@@ -112,8 +134,36 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string) {
 	}
 
 	s.FileLineCovsMutex.Lock()
-	score := analysis.CalculateFuzzerScore(fuzzer, lineCov, s.FileLineCovs, s.AST, s.SourceCode, maputil.Keys(functions))
-	s.FileLineCovs = lineCov
+	
+	// Handle line coverage based on period
+	var prevFileLineCovs []analysis.FileLineCov
+	if period == "begin" {
+		// For begin period, we might want to start fresh comparison
+		log.Println("Period 'begin': Starting fresh line coverage comparison")
+		// We could use empty or initial coverage as baseline
+		prevFileLineCovs = make([]analysis.FileLineCov, len(lineCov))
+		// Copy structure but reset counts to 0 for fresh start
+		for i := range lineCov {
+			prevFileLineCovs[i] = lineCov[i]
+			prevFileLineCovs[i].ResetCov()
+		}
+	} else {
+		// For end period or no period, use existing FileLineCovs for comparison
+		prevFileLineCovs = s.FileLineCovs
+	}
+	
+	score := analysis.CalculateFuzzerScore(fuzzer, lineCov, prevFileLineCovs, s.AST, s.SourceCode, maputil.Keys(functions))
+	
+	// Update FileLineCovs for next comparison
+	if period != "begin" {
+		// Only update if not starting a new period
+		s.FileLineCovs = lineCov
+	} else {
+		// For begin period, we might want to set this as the baseline
+		log.Println("Period 'begin': Setting current coverage as baseline")
+		s.FileLineCovs = lineCov
+	}
+	
 	s.FileLineCovsMutex.Unlock()
 
 	s.FuzzerScoresMutex.Lock()
@@ -135,6 +185,15 @@ func (s *Server) handleReportCorpus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, APIResponse{
 			Success: false,
 			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	// Validate period parameter if provided
+	if report.Period != "" && report.Period != "begin" && report.Period != "end" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Success: false,
+			Message: "Invalid period value. Must be 'begin' or 'end' if provided",
 		})
 		return
 	}
@@ -177,13 +236,18 @@ func (s *Server) handleReportCorpus(c *gin.Context) {
 	}
 
 	go func() {
-		s.processCorpus(taskID, report.Fuzzer, corpusDir)
+		s.processCorpus(taskID, report.Fuzzer, corpusDir, report.Period)
 		defer os.RemoveAll(corpusDir)
 	}()
 
+	responseMsg := "Corpus report received successfully. Processing in background."
+	if report.Period != "" {
+		responseMsg += " Period: " + report.Period
+	}
+
 	c.JSON(http.StatusOK, APIResponse{
 		Success: true,
-		Message: "Corpus report received successfully. Processing in background.",
+		Message: responseMsg,
 	})
 
 }
