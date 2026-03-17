@@ -18,7 +18,10 @@ done
 cd freetype2
 git checkout 94cb3a2eb96b3f17a1a3bd0e6f7da97c0e1d8f57
 
-DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -flto -g"
+export CC="gclang"
+export CXX="gclang++"
+
+DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
@@ -31,8 +34,8 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
 fi
 
 if [ ! -d "libarchive-3.4.3" ]; then
-  wget https://github.com/libarchive/libarchive/releases/download/v3.4.3/libarchive-3.4.3.tar.xz 
-  tar -xvf libarchive-3.4.3.tar.xz 
+  wget https://github.com/libarchive/libarchive/releases/download/v3.4.3/libarchive-3.4.3.tar.xz
+  tar -xvf libarchive-3.4.3.tar.xz
   rm libarchive-3.4.3.tar.xz
 
   pushd libarchive-3.4.3/
@@ -49,21 +52,6 @@ mkdir -p src/tools/ftfuzzer/
 wget -O src/tools/ftfuzzer/ftfuzzer.cc https://raw.githubusercontent.com/freetype/freetype2-testing/refs/heads/master/fuzzing/src/legacy/ftfuzzer.cc
 
 bash autogen.sh # preinstall: libtool
-mkdir -p build__HFC_qzmp__
-rm -rf build__HFC_qzmp__/*
-export CXXFLAGS="-fuse-ld=gold $DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
-export CFLAGS="-fuse-ld=gold $DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
-# ../configure --disable-shared --prefix=$(pwd)/install --with-harfbuzz=no --with-bzip2 --with-png --with-zlib --with-brotli
-cmake -B build__HFC_qzmp__ -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=11 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  -DCMAKE_INSTALL_PREFIX=$(pwd)/build__HFC_qzmp__/install -DFT_DISABLE_BROTLI=TRUE \
-  -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE
-pushd build__HFC_qzmp__
-make clean && FUZZ_INTROSPECTOR=1 make -j && make install
-FUZZ_INTROSPECTOR=1 ${CC} $DEFAULT_FLAGS -fsanitize=fuzzer -fuse-ld=gold -std=c++11 \
-  -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
-  ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
-  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
-popd
 
 mkdir -p build-runtime
 rm -rf build-runtime/*
@@ -85,3 +73,27 @@ ${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
   ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a \
   ../../../pfuzzer/build/libfuzzer.a
 popd
+
+mkdir -p build__HFC_qzmp__
+rm -rf build__HFC_qzmp__/*
+export CXXFLAGS="$DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
+export CFLAGS="$DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
+export CC=gclang
+export CXX=gclang++
+# ../configure --disable-shared --prefix=$(pwd)/install --with-harfbuzz=no --with-bzip2 --with-png --with-zlib --with-brotli
+cmake -B build__HFC_qzmp__ -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=11 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_INSTALL_PREFIX=$(pwd)/build__HFC_qzmp__/install -DFT_DISABLE_BROTLI=TRUE \
+  -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE
+pushd build__HFC_qzmp__
+make clean && make -j && make install
+
+${CXX} -c $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 \
+  -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
+  ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer.o \
+  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
+${CXX} $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 \
+  ftfuzzer.o  -o ftfuzzer \
+  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
+
+popd
+
