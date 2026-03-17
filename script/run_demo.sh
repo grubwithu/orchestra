@@ -121,5 +121,5 @@ fi
 ## 5. Run pfuzzer
 if [ $HFC_ONLY -eq 0 ]; then
   mkdir -p tmp_xx223
-  AFL_SKIP_CPUFREQ=1 HFC_URL=http://localhost:8080 test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ -rss_limit_mb=0 -fork=4 -fuzzers=afl,aflfast,aflplusplus,libfuzzer $PASS_ARGS
+  AFL_SKIP_CPUFREQ=1 HFC_URL=http://localhost:8080 test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ -rss_limit_mb=0 -fork=2 -fuzzers=libfuzzer $PASS_ARGS
 fi

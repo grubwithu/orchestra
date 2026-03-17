@@ -12,9 +12,16 @@ Request Body:
     "corpus": [
         "/path/to/corpus1",
         "/path/to/corpus2"
-    ]
+    ],
+    "period": "begin"
 }
 ```
+
+**Fields:**
+- `fuzzer` (string, required): The name of the fuzzer reporting the corpus.
+- `identity` (string, required): Unique identifier for the fuzzer instance.
+- `corpus` (array of strings, required): List of paths to corpus files or directories.
+- `period` (string, optional): Indicates the reporting period. Use `"begin"` to mark the start of a fuzzing cycle and save the initial coverage baseline for the fuzzer.
 
 Response Body:
 ```json
@@ -24,6 +31,15 @@ Response Body:
   "data": {
     "task_id": "554f3a04-01d8-4292-b55f-4b8fd06d6bed"
   }
+}
+```
+
+### /log
+
+Request Body:
+```json
+{
+    "log": "log content"
 }
 ```
 

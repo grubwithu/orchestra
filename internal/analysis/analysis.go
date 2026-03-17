@@ -5,6 +5,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/google/uuid"
 	sitter "github.com/smacker/go-tree-sitter"
@@ -90,7 +91,7 @@ func IdentifyImportantConstraints(callTree *CallTree, progCovData *ProgCovData) 
 	return constraints
 }
 
-func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *ProgCovData, ast map[string]*sitter.Tree, sourceCode map[string][]byte) []ConstraintGroup {
+func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *ProgCovData, ast map[string]*sitter.Tree, sourceCode map[string][]byte, functionProfiles []*FunctionProfile) []ConstraintGroup {
 	functionGroups := map[string]*ConstraintGroup{}
 
 	for _, constraint := range constraints {
@@ -117,7 +118,7 @@ func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *
 			slices.Reverse(path)
 			group.Paths = append(group.Paths, path)
 		}
-		group.ConstraintScore = calculateScore(*group, ast, sourceCode)
+		group.ConstraintScore = calculateScore(*group, ast, sourceCode, functionProfiles)
 		result = append(result, *group)
 	}
 
@@ -133,7 +134,7 @@ func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *
 	return result[:cut]
 }
 
-func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCode map[string][]byte) ConstraintScore {
+func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCode map[string][]byte, functionProfiles []*FunctionProfile) ConstraintScore {
 
 	// check whether ast contains group.FileName
 	tree, hasAST := ast[group.FileName]
@@ -142,7 +143,20 @@ func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCo
 		return ConstraintScore{}
 	}
 
-	funcNode := findFunctionWithQuery(tree, sourceCode[group.FileName], group.MainFunction)
+	var funcNode *sitter.Node
+	if strings.HasPrefix(group.MainFunction, "_Z") {
+		for _, profile := range functionProfiles {
+			if profile.FunctionName == group.MainFunction {
+				startLine := profile.FunctionLinenumber
+				funcNode = findFunctionAtLine(tree, uint32(startLine))
+				log.Println("Found function " + group.MainFunction)
+				break
+			}
+		}
+	} else {
+		funcNode = findFunctionWithQuery(tree, sourceCode[group.FileName], group.MainFunction)
+	}
+
 	if funcNode == nil {
 		log.Println("Warning: cannot find function " + group.MainFunction + " in file " + group.FileName)
 		return ConstraintScore{}

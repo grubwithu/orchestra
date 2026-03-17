@@ -75,6 +75,7 @@ func drillDownToLine(node *sitter.Node, targetLine uint32) *sitter.Node {
 	return node
 }
 
+// line is 1-based
 func findFunctionAtLine(tree *sitter.Tree, line uint32) *sitter.Node {
 	if tree == nil || tree.RootNode() == nil {
 		return nil
@@ -238,7 +239,7 @@ func findIfBody(node *sitter.Node) *sitter.Node {
 	return nil
 }
 
-// analyzeIfClause 分析if语句的条件表达式，确定约束类型
+// analyzeIfClause
 func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 	if condition == nil {
 		return CT_COMPOUND_OPERATION
@@ -246,7 +247,6 @@ func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 
 	conditionCode := condition.Content(sourceCode)
 
-	// 分析条件表达式的内容
 	if strings.Contains(conditionCode, "strcmp") || strings.Contains(conditionCode, "strstr") ||
 		strings.Contains(conditionCode, "strncmp") || strings.Contains(conditionCode, "memcmp") ||
 		strings.Contains(conditionCode, "\"") || strings.Contains(conditionCode, "'") {
