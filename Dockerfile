@@ -1,3 +1,4 @@
+# hfc-base:latest
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -42,18 +43,19 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 ENV GOPATH="/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
 
-WORKDIR /opt
-RUN git clone https://github.com/grubwithu/hfc-introspector.git && \
-    cd hfc-introspector && mkdir build && cd build && \
-    CC=clang-21 CXX=clang++-21 cmake .. && make
-ENV FUZZ_INTRO="/opt/hfc-introspector/build/FuzzIntrospector.so" 
-
 RUN go install github.com/SRI-CSL/gllvm/cmd/...@latest
+
+WORKDIR /opt
 
 RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/fuzzers.tgz && \
     wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/targets.tgz && \
     tar -xzf fuzzers.tgz && tar -xzf targets.tgz && rm fuzzers.tgz targets.tgz && \
     cd fuzzers && bash build.sh
+
+RUN git clone https://github.com/grubwithu/hfc-introspector.git && \
+    cd hfc-introspector && mkdir build && cd build && \
+    CC=clang-21 CXX=clang++-21 cmake .. && make
+ENV FUZZ_INTRO="/opt/hfc-introspector/build/FuzzIntrospector.so" 
 
 WORKDIR /root
 

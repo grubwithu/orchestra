@@ -37,7 +37,7 @@ func (p *Plugin) Name() string {
 // Coverage plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
 	_, ok := data.Data["prerun"].(prerun.PrerunData)
-	return ok && data.Period == "begin"
+	return ok && data.Period != "begin"
 }
 
 // Init initializes the plugin
