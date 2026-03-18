@@ -80,6 +80,7 @@ ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS -lstdc++ \
   hb-shape-fuzzer.o -o hb-shape-fuzzer \
   $(pwd)/install/lib/libharfbuzz.a
 
-opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" hb-shape-fuzzer
+get-bc -o hb-shape-fuzzer.bc hb-shape-fuzzer
+opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" hb-shape-fuzzer.bc
 
 popd

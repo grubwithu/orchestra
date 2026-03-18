@@ -77,6 +77,7 @@ ${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
   ../../../pfuzzer/build/libfuzzer.a \
   .libs/libpng16.a -lz -lm -lstdc++
 
-opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" libpng_read_fuzzer
+get-bc -o libpng_read_fuzzer.bc libpng_read_fuzzer
+opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" libpng_read_fuzzer.bc
 
 popd

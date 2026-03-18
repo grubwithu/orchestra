@@ -78,6 +78,7 @@ ${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
   $(pwd)/install/lib/libsqlite3.a \
   ../../../pfuzzer/build/libfuzzer.a
 
-opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" ossfuzz
+get-bc -o ossfuzz.bc ossfuzz
+opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" ossfuzz.bc
 
 popd

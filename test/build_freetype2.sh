@@ -94,7 +94,9 @@ ${CXX} -c $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 \
 ${CXX} $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 \
   ftfuzzer.o  -o ftfuzzer \
   ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
-opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" ftfuzzer
+
+get-bc -o ftfuzzer.bc ftfuzzer
+opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" ftfuzzer.bc
 
 popd
 
