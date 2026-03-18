@@ -7,4 +7,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /root/hfc/test
 
-RUN bash build_freetype2.sh
+RUN bash build_freetype2.sh && \
+    bash build_sqlite3.sh && \
+    bash build_libpng.sh && \
+    bash build_harfbuzz.sh
