@@ -26,7 +26,9 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-21 100 && 
     update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 100 && \
     update-alternatives --install /usr/bin/lld lld /usr/bin/lld-21 100 && \
     update-alternatives --install /usr/bin/opt opt /usr/bin/opt-21 100 && \
-    update-alternatives --install /usr/bin/llvm-link llvm-link /usr/bin/llvm-link-21 100
+    update-alternatives --install /usr/bin/llvm-link llvm-link /usr/bin/llvm-link-21 100 && \
+    update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-21 100 && \
+    update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-21 100
 
 ENV GO_VERSION=1.26.1
 RUN ARCH="$(dpkg --print-architecture)" && \
