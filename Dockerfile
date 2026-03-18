@@ -3,10 +3,8 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    gnupg \
-    lsb-release \
+    wget git cmake curl \
+    gnupg lsb-release \
     software-properties-common \
     build-essential \
     ca-certificates \
@@ -45,8 +43,7 @@ ENV GOPATH="/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
 
 WORKDIR /opt
-RUN apt-get update && apt-get install -y git cmake && \
-    git clone https://github.com/grubwithu/hfc-introspector.git && \
+RUN git clone https://github.com/grubwithu/hfc-introspector.git && \
     cd hfc-introspector && mkdir build && cd build && \
     CC=clang-21 CXX=clang++-21 cmake .. && make
 ENV FUZZ_INTRO="/opt/hfc-introspector/build/FuzzIntrospector.so" 
@@ -55,10 +52,13 @@ RUN go install github.com/SRI-CSL/gllvm/cmd/...@latest
 
 RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/fuzzers.tgz && \
     wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/targets.tgz && \
-    tar -xzf fuzzers.tgz && tar -xzf targets.tgz && rm fuzzers.tgz targets.tgz \
+    tar -xzf fuzzers.tgz && tar -xzf targets.tgz && rm fuzzers.tgz targets.tgz && \
     cd fuzzers && bash build.sh
 
 WORKDIR /root
-RUN git clone https://github.com/grubwithu/hfc.git && \
-    cd hfc && git submodule update --init --recursive && make 
 
+ADD "https://api.github.com/repos/grubwithu/hfc/commits?per_page=1" /dev/null
+
+RUN git clone https://github.com/grubwithu/hfc.git && \
+    cd hfc && git submodule update --init --recursive && make && \
+    cd pfuzzer && bash build.sh
