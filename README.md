@@ -30,6 +30,15 @@ This script will:
   - (In fact, three binaries are generated. A is never used. B is used for coverage report in HFC. C is running as pfuzzer.)
 - Run HFC and pfuzzer in parallel.
 
+## Run in Docker
+
+We provide a Dockerfile to build the test environment.
+
+```
+$ docker build -t hfc-base:latest .
+$ cd test/
+$ docker build -t hfc-test:latest .
+```
 
 ## TODO 26.1.11
 
