@@ -76,7 +76,7 @@ ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
   -o hb-shape-fuzzer.o \
   $(pwd)/install/lib/libharfbuzz.a
 
-${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS -lstdc++ \
+${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS -lstdc++ \
   hb-shape-fuzzer.o -o hb-shape-fuzzer \
   $(pwd)/install/lib/libharfbuzz.a
 

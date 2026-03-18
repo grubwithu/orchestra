@@ -74,7 +74,6 @@ ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
 ${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
   -o libpng_read_fuzzer \
   libpng_read_fuzzer.o \
-  ../../../pfuzzer/build/libfuzzer.a \
   .libs/libpng16.a -lz -lm -lstdc++
 
 get-bc -o libpng_read_fuzzer.bc libpng_read_fuzzer

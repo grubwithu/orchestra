@@ -65,18 +65,17 @@ export CFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 
 ../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j && make install
 
-${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
+${CC} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
   -lstdc++ \
   -I$(pwd)/install/include \
   ../test/ossfuzz.c \
   -o ossfuzz.o \
   $(pwd)/install/lib/libsqlite3.a
 
-${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
+${CC} -fsanitize=fuzzer $DEFAULT_FLAGS \
   -o ossfuzz \
   ossfuzz.o \
-  $(pwd)/install/lib/libsqlite3.a \
-  ../../../pfuzzer/build/libfuzzer.a
+  $(pwd)/install/lib/libsqlite3.a
 
 get-bc -o ossfuzz.bc ossfuzz
 opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" ossfuzz.bc
