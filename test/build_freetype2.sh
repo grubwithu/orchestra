@@ -33,21 +33,6 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   exit 0
 fi
 
-if [ ! -d "libarchive-3.4.3" ]; then
-  wget https://github.com/libarchive/libarchive/releases/download/v3.4.3/libarchive-3.4.3.tar.xz
-  tar -xvf libarchive-3.4.3.tar.xz
-  rm libarchive-3.4.3.tar.xz
-
-  pushd libarchive-3.4.3/
-  mkdir -p building
-  cd building
-  export CXXFLAGS="$DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
-  export CFLAGS="$DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
-  ../configure --disable-shared --prefix=$(pwd)/install
-  make clean && make -j$(nproc) && make install
-  popd
-fi
-
 mkdir -p src/tools/ftfuzzer/
 wget -O src/tools/ftfuzzer/ftfuzzer.cc https://raw.githubusercontent.com/freetype/freetype2-testing/refs/heads/master/fuzzing/src/legacy/ftfuzzer.cc
 
@@ -64,14 +49,11 @@ cmake -B build-runtime -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAK
 pushd build-runtime
 make clean && make -j && make install
 ${CC} -fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS -fsanitize=address,fuzzer -std=c++11 \
-  -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
-  ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer_cov \
-  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
+  -larchive -I./install/include/ -I../include/ ../src/tools/ftfuzzer/ftfuzzer.cc \
+  -o ftfuzzer_cov ./install/lib/libfreetyped.a
 ${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
-  -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
-  ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
-  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a \
-  ../../../pfuzzer/build/libfuzzer.a
+  -larchive -I./install/include/ -I../include/ ../src/tools/ftfuzzer/ftfuzzer.cc \
+  -o ftfuzzer ./install/lib/libfreetyped.a ../../../pfuzzer/build/libfuzzer.a
 popd
 
 mkdir -p build__HFC_qzmp__
@@ -87,13 +69,13 @@ cmake -B build__HFC_qzmp__ -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -D
 pushd build__HFC_qzmp__
 make clean && make -j && make install
 
-${CXX} -c $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 \
-  -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
-  ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer.o \
-  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
-${CXX} $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 \
+${CXX} -c $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 -larchive \
+  -I./install/include/ -I../include/ \
+  ../src/tools/ftfuzzer/ftfuzzer.cc -o ftfuzzer.o \
+  ./install/lib/libfreetyped.a
+${CXX} $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 -larchive \
   ftfuzzer.o  -o ftfuzzer \
-  ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a
+  ./install/lib/libfreetyped.a
 
 get-bc -o ftfuzzer.bc ftfuzzer
 opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" ftfuzzer.bc
