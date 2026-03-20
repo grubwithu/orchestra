@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -69,10 +70,22 @@ func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMat
 	log.Println("Initializing plugins...")
 	plugins := s.PluginRegistry.List()
 
+	progPathAbs, err := filepath.Abs(progPath)
+	if err != nil {
+		log.Printf("Error getting absolute path of program: %v\n", err)
+		os.Exit(1)
+	}
+
+	fuzzIntroPrefixAbs, err := filepath.Abs(fuzzIntroPrefix)
+	if err != nil {
+		log.Printf("Error getting absolute path of fuzz intro prefix: %v\n", err)
+		os.Exit(1)
+	}
+
 	for _, p := range plugins {
 		if err := p.Init(ctx, plugin.PluginConfig{
-			Executable:      progPath,
-			FuzzIntroPrefix: fuzzIntroPrefix,
+			Executable:      progPathAbs,
+			FuzzIntroPrefix: fuzzIntroPrefixAbs,
 			SrcPathMatch:    srcPathMatch,
 		}); err != nil {
 			log.Printf("Error initializing plugin %s: %v\n", p.Name(), err)
