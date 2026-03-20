@@ -50,9 +50,7 @@ RUN go install github.com/SRI-CSL/gllvm/cmd/...@latest
 WORKDIR /opt
 
 RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/fuzzers.tgz && \
-    wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/targets.tgz && \
-    tar -xzf fuzzers.tgz && tar -xzf targets.tgz && rm fuzzers.tgz targets.tgz && \
-    cd fuzzers && bash build.sh
+    tar -xzf fuzzers.tgz && rm fuzzers.tgz && cd fuzzers && bash build.sh
 
 ADD "https://api.github.com/repos/grubwithu/hfc-introspector/commits?per_page=1" /dev/null
 RUN git clone https://github.com/grubwithu/hfc-introspector.git && \

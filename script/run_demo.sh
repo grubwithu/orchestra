@@ -104,18 +104,16 @@ pushd test/$TARGET/
 pushd build__HFC_qzmp__/
 DATA_FILE=$(ls ./fuzzerLogFile*.data | head -n 1)
 DATA_FILE_ABS=$(realpath $DATA_FILE)
-YAML_FILE=$(ls ./fuzzerLogFile*.yaml | head -n 1)
-YAML_FILE_ABS=$(realpath $YAML_FILE)
 popd
 pushd build-runtime/
 PROG_FILE=$(realpath ${PROGNAME}_cov)
 popd
 popd
 if [ $HFC_ONLY -eq 0 ]; then
-  build/hfc -calltree=$DATA_FILE_ABS -profile=$YAML_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1 & HFC_PID=$!
+  build/hfc -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1 & HFC_PID=$!
   sleep 5
 elif [ $HFC_ONLY -eq 1 ]; then
-  build/hfc -calltree=$DATA_FILE_ABS -profile=$YAML_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1
+  build/hfc -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1
 fi
 
 ## 5. Run pfuzzer
