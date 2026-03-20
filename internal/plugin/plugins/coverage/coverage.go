@@ -11,20 +11,23 @@ import (
 	"github.com/grubwithu/hfc/internal/plugin/plugins/prerun"
 )
 
+type CoverageData struct {
+	GlobalCov *analysis.ProgCovData
+	FuzzerCov map[string][]int
+}
+
 // Plugin handles coverage data processing
 type Plugin struct {
-	config       plugin.PluginConfig
-	fuzzerCovs   map[string][]int
-	globalCov    *analysis.ProgCovData
-	fileLineCovs []analysis.FileLineCov
-	mutex        sync.RWMutex
+	config     plugin.PluginConfig
+	fuzzerCovs map[string][]int
+	globalCov  *analysis.ProgCovData
+	mutex      sync.RWMutex
 }
 
 // NewPlugin creates a new coverage plugin
 func NewPlugin() *Plugin {
 	return &Plugin{
-		fuzzerCovs:   make(map[string][]int),
-		fileLineCovs: []analysis.FileLineCov{},
+		fuzzerCovs: make(map[string][]int),
 	}
 }
 
@@ -90,8 +93,12 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		}
 	}
 
-	// Update file line coverage
-	p.fileLineCovs = prerunResult.LineCov
+	coverageResult := CoverageData{
+		GlobalCov: p.globalCov,
+		FuzzerCov: p.fuzzerCovs,
+	}
+
+	data.Data["coverage"] = coverageResult
 
 	log.Printf("Processed coverage data for fuzzer: %s\n", data.Fuzzer)
 	return nil
@@ -103,9 +110,7 @@ func (p *Plugin) Result(ctx context.Context) (any, error) {
 	defer p.mutex.RUnlock()
 
 	return map[string]any{
-		"fuzzer_covs":    p.fuzzerCovs,
-		"global_cov":     p.globalCov,
-		"file_line_covs": p.fileLineCovs,
+		"fuzzer_covs": p.fuzzerCovs,
 	}, nil
 }
 
@@ -116,7 +121,6 @@ func (p *Plugin) Cleanup(ctx context.Context) error {
 	defer p.mutex.Unlock()
 	p.fuzzerCovs = make(map[string][]int)
 	p.globalCov = nil
-	p.fileLineCovs = []analysis.FileLineCov{}
 	return nil
 }
 

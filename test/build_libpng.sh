@@ -36,10 +36,10 @@ fi
 mkdir -p build-runtime
 pushd build-runtime
 rm -rf *
-
+export CC="clang"
+export CXX="clang++"
 export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-
 ../configure --disable-shared --prefix=$(pwd)/install && make -j && make install
 
 ${CC} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FLAGS \
@@ -59,10 +59,10 @@ popd
 mkdir -p build__HFC_qzmp__
 pushd build__HFC_qzmp__
 rm -rf *
-
+export CC="gclang"
+export CXX="gclang++"
 export CXXFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-
 ../configure --disable-shared --prefix=$(pwd)/install && make -j && make install
 
 ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \

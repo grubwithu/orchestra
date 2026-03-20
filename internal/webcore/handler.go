@@ -40,7 +40,6 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string, peri
 		Corpus: corpus,
 		Period: period,
 		TaskID: string(taskID),
-		Data:   make(map[string]any),
 	}
 
 	// Process through plugin pipeline
@@ -52,6 +51,8 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string, peri
 
 	log.Printf("Processed corpus item %s for task %s.\n", corpus, taskID)
 
+	// rm - corpusDir
+	os.RemoveAll(corpus)
 }
 
 type ReportCorpusResponse struct {
@@ -169,4 +170,20 @@ func (s *Server) handleLog(c *gin.Context) {
 		Message: "Log received successfully",
 	})
 
+}
+
+func (s *Server) handleReady(c *gin.Context) {
+	s.ReadyMutex.Lock()
+	defer s.ReadyMutex.Unlock()
+	if s.Ready {
+		c.JSON(http.StatusOK, APIResponse{
+			Success: true,
+			Message: "Ready",
+		})
+	} else {
+		c.JSON(http.StatusOK, APIResponse{
+			Success: false,
+			Message: "Not ready",
+		})
+	}
 }

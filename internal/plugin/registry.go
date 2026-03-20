@@ -127,6 +127,10 @@ func (r *Registry) ProcessAll(ctx context.Context, data *PluginData) error {
 	copy(plugins, r.plugins)
 	r.mu.RUnlock()
 
+	if data.Data == nil {
+		data.Data = make(map[string]any)
+	}
+
 	for _, p := range plugins {
 		if !r.enabled[p.Name()] {
 			continue

@@ -3,6 +3,7 @@ package constraint
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 	"sync"
@@ -102,6 +103,8 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		var prevFileLineCovs []analysis.FileLineCov
 		if fileLineCovs, ok := p.fuzzerBeginCov[data.Fuzzer]; ok {
 			prevFileLineCovs = fileLineCovs
+		} else {
+			return fmt.Errorf("The coverage information of input seeds not found for fuzzer: %s", data.Fuzzer)
 		}
 
 		// Get important functions

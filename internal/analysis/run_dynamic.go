@@ -111,7 +111,7 @@ func llvmLineCovPreprocess(output string) []FileLineCov {
 
 }
 
-func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (int, string, error) {
+func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (cov int, profdataPath string, err error) {
 	tempDir, err := os.MkdirTemp(workDir, "corpus")
 	if err != nil {
 		return 0, "", fmt.Errorf("failed to create corpus directory: %w", err)
@@ -138,7 +138,7 @@ func RunOnceForProfdata(workDir string, progPath string, corpusPath string) (int
 	// There must be a line "MERGE-OUTER: 2 new files with 2321 new features added; 2114 new coverage edges"
 	// Extracting the number before "new coverage edges"
 	lines := strings.Split(outBuffer.String(), "\n")
-	cov := 0
+	cov = 0
 	for _, line := range lines {
 		if strings.HasPrefix(line, "MERGE-OUTER:") {
 			parts := strings.Split(line, ";")

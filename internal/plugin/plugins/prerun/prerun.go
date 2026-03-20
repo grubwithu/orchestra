@@ -197,10 +197,6 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		SourceCode: p.initData.SourceCode,
 	}
 
-	// Store in shared data for other plugins
-	if data.Data == nil {
-		data.Data = make(map[string]any)
-	}
 	data.Data["prerun"] = prerunResult
 
 	log.Printf("PrerunPlugin processed corpus %s for fuzzer %s\n", data.Corpus, data.Fuzzer)

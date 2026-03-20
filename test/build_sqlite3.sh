@@ -17,9 +17,6 @@ done
 cd sqlite3
 git checkout 4d9384cba35ce7971431da9b543e0f9d68975947
 
-export CC="gclang"
-export CXX="gclang++"
-
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
@@ -37,6 +34,8 @@ fi
 mkdir -p build-runtime
 pushd build-runtime
 rm -rf *
+export CC="clang"
+export CXX="clang++"
 export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 ../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j && make install
@@ -59,10 +58,10 @@ popd
 mkdir -p build__HFC_qzmp__
 pushd build__HFC_qzmp__
 rm -rf *
-
+export CC="gclang"
+export CXX="gclang++"
 export CXXFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-
 ../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j && make install
 
 ${CC} -c -fsanitize=fuzzer $DEFAULT_FLAGS \

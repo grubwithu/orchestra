@@ -18,9 +18,6 @@ done
 cd freetype2
 git checkout 94cb3a2eb96b3f17a1a3bd0e6f7da97c0e1d8f57
 
-export CC="gclang"
-export CXX="gclang++"
-
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
@@ -40,6 +37,8 @@ bash autogen.sh # preinstall: libtool
 
 mkdir -p build-runtime
 rm -rf build-runtime/*
+export CC="clang"
+export CXX="clang++"
 export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link"
 export CFLAGS="-fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link"
 #../configure --disable-shared --prefix=$(pwd)/install --with-harfbuzz=no --with-bzip2=no --with-png=no --without-zlib --with-brotli=no
@@ -58,10 +57,10 @@ popd
 
 mkdir -p build__HFC_qzmp__
 rm -rf build__HFC_qzmp__/*
+export CC="gclang"
+export CXX="gclang++"
 export CXXFLAGS="$DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
 export CFLAGS="$DEFAULT_FLAGS -fsanitize=fuzzer-no-link"
-export CC=gclang
-export CXX=gclang++
 # ../configure --disable-shared --prefix=$(pwd)/install --with-harfbuzz=no --with-bzip2 --with-png --with-zlib --with-brotli
 cmake -B build__HFC_qzmp__ -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=11 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
   -DCMAKE_INSTALL_PREFIX=$(pwd)/build__HFC_qzmp__/install -DFT_DISABLE_BROTLI=TRUE \
