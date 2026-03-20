@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -65,6 +66,7 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMatch string) {
 	ctx := context.Background()
 
+	log.Println("Initializing plugins...")
 	plugins := s.PluginRegistry.List()
 
 	for _, p := range plugins {
@@ -74,8 +76,11 @@ func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMat
 			SrcPathMatch:    srcPathMatch,
 		}); err != nil {
 			log.Printf("Error initializing plugin %s: %v\n", p.Name(), err)
+			os.Exit(1)
 		}
 	}
+
+	log.Println("Plugins initialized successfully")
 
 	s.ReadyMutex.Lock()
 	defer s.ReadyMutex.Unlock()
