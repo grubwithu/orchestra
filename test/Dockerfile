@@ -17,5 +17,7 @@ RUN cd test/ && \
 WORKDIR /opt
 RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/targets.tgz && \
     tar -xzf targets.tgz && rm targets.tgz && \
-    pushd targets && bash hfc.sh && popd && \
-    cd fuzzers && bash hfc.sh
+    cd targets/ && bash hfc.sh && cd .. && \
+    cd fuzzers/ && bash hfc.sh
+
+WORKDIR /root/hfc/

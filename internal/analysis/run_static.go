@@ -45,11 +45,11 @@ type FunctionProfile struct {
 }
 
 type ProgramProfile struct {
-	FuzzerFileName string `yaml:"Fuzzer filename"`
+	FuzzerFileName string `yaml:"FuzzerFilename"`
 	AllFunctions   struct {
-		FunctionListName string             `yaml:"Function list name"`
+		FunctionListName string             `yaml:"FunctionListName"`
 		Elements         []*FunctionProfile `yaml:"Elements"`
-	} `yaml:"All functions"`
+	} `yaml:"AllFunctions"`
 }
 
 type CallTreeNode struct {
