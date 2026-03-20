@@ -24,28 +24,18 @@ var (
 	W_Complexity = 0.15
 )
 
-type ImportantConstraint struct {
-	CallTreeNode     *CallTreeNode
-	HitFreqWeight    float64
-	RarityWeight     float64
-	DepthWeight      float64
-	BranchWeight     float64
-	ComplexityWeight float64
-	ImportanceScore  float64
-}
-
 type ConstraintGroup struct {
 	GroupId         string          `json:"group_id"`
-	MainFunction    string          `json:"function"`
-	FileName        string          `json:"file_name"`
-	TotalImportance float64         `json:"importance"`
-	Paths           [][]string      `json:"paths"`
-	ConstraintScore ConstraintScore `json:"constraint_score"`
-
-	Constraints []ImportantConstraint `json:"-"`
+	Path            []string        `json:"path"`             // Path from root to leaf
+	LeafFunction    string          `json:"leaf_function"`    // The leaf function
+	FileName        string          `json:"file_name"`        // File name of the leaf function
+	TotalImportance float64         `json:"importance"`       // Total weighted score
+	ConstraintScore ConstraintScore `json:"constraint_score"` // Constraint preference score
 }
 
-func IdentifyImportantConstraints(callTree *CallTree, progCovData *ProgCovData) []ImportantConstraint {
+// GetConstraintGroups generates constraint groups based on call tree leaf nodes
+// Each constraint group represents a path from root to leaf in the call tree
+func GetConstraintGroups(callTree *CallTree, progCovData *ProgCovData, ast map[string]*sitter.Tree, sourceCode map[string][]byte, functionProfiles []*FunctionProfile) []ConstraintGroup {
 	// create a map of function coverage
 	MAX_NUM_CHILDREN := len(callTree.Nodes) - 1
 	MIN_HITS := math.MaxInt
@@ -63,108 +53,156 @@ func IdentifyImportantConstraints(callTree *CallTree, progCovData *ProgCovData) 
 		}
 	}
 
-	constraints := []ImportantConstraint{}
-
+	// Find all leaf nodes in the call tree
+	leafNodes := []*CallTreeNode{}
 	for _, node := range callTree.Nodes {
-		if node.FunctionProfile == nil || coverageMap[node.FunctionProfile.FunctionName] == 0 || node == callTree.Root {
-			continue
+		if node.FunctionProfile != nil && len(node.Children) == 0 {
+			leafNodes = append(leafNodes, node)
 		}
-		constraint := ImportantConstraint{
-			CallTreeNode: node,
-		}
-		constraint.HitFreqWeight = (float64(coverageMap[node.FunctionProfile.FunctionName]) - float64(MIN_HITS)) / float64(MAX_HITS-MIN_HITS)
-		if constraint.HitFreqWeight >= 0.3 {
-			continue
-		}
-		constraint.HitFreqWeight = constraint.HitFreqWeight / 0.3
-		constraint.RarityWeight = 1.0 - covCdf.GetCDFValue(float64(coverageMap[node.FunctionProfile.FunctionName]))
-		constraint.DepthWeight = math.Sqrt(float64(node.GetUpperDepth()) / float64(callTree.MaxDepth))
-		constraint.BranchWeight = float64(node.CountDescendantNode()) / float64(MAX_NUM_CHILDREN)
-		constraint.ComplexityWeight = float64(node.FunctionProfile.CyclomaticComplexity) / float64(callTree.MaxCyclomaticComplexity)
-		constraint.ImportanceScore = W_HitFreq*constraint.HitFreqWeight + W_Rarity*constraint.RarityWeight + W_Depth*constraint.DepthWeight + W_Branch*constraint.BranchWeight + W_Complexity*constraint.ComplexityWeight
-		constraints = append(constraints, constraint)
 	}
 
-	sort.Slice(constraints, func(i, j int) bool {
-		return constraints[i].ImportanceScore > constraints[j].ImportanceScore
-	})
-
-	return constraints
-}
-
-func GroupConstraintsByFunction(constraints []ImportantConstraint, progCovData *ProgCovData, ast map[string]*sitter.Tree, sourceCode map[string][]byte, functionProfiles []*FunctionProfile) []ConstraintGroup {
-	functionGroups := map[string]*ConstraintGroup{}
-
-	for _, constraint := range constraints {
-		funcName := constraint.CallTreeNode.FunctionProfile.FunctionName
-		if _, ok := functionGroups[funcName]; !ok {
-			functionGroups[funcName] = &ConstraintGroup{
-				GroupId:      uuid.New().String(),
-				MainFunction: funcName,
-				FileName:     constraint.CallTreeNode.FunctionProfile.FunctionSourceFile,
-			}
+	// Generate constraint groups from leaf nodes
+	groups := []ConstraintGroup{}
+	for _, leafNode := range leafNodes {
+		// Generate path from root to leaf
+		path := []string{}
+		node := leafNode
+		for node != nil {
+			path = append(path, node.FunctionProfile.FunctionName)
+			node = node.Parent
 		}
-		functionGroups[funcName].Constraints = append(functionGroups[funcName].Constraints, constraint)
-		functionGroups[funcName].TotalImportance += constraint.ImportanceScore
-	}
-	result := []ConstraintGroup{}
-	for _, group := range functionGroups {
-		for _, constraint := range group.Constraints {
-			path := make([]string, 0)
-			node := constraint.CallTreeNode.Parent
-			for node != nil {
-				path = append(path, node.FunctionProfile.FunctionName)
+		slices.Reverse(path)
+
+		// Calculate weighted score for this path
+		totalScore := 0.0
+		node = leafNode
+		depth := 0
+		// Calculate score for each node in the path with weight
+		for node != nil {
+			if node.FunctionProfile == nil || coverageMap[node.FunctionProfile.FunctionName] == 0 {
 				node = node.Parent
+				depth++
+				continue
 			}
-			slices.Reverse(path)
-			group.Paths = append(group.Paths, path)
+
+			// Calculate individual node score (same as before)
+			hitFreqWeight := (float64(coverageMap[node.FunctionProfile.FunctionName]) - float64(MIN_HITS)) / float64(MAX_HITS-MIN_HITS)
+			if hitFreqWeight >= 0.3 {
+				node = node.Parent
+				depth++
+				continue
+			}
+			hitFreqWeight = hitFreqWeight / 0.3
+			rarityWeight := 1.0 - covCdf.GetCDFValue(float64(coverageMap[node.FunctionProfile.FunctionName]))
+			depthWeight := math.Sqrt(float64(node.GetUpperDepth()) / float64(callTree.MaxDepth))
+			branchWeight := float64(node.CountDescendantNode()) / float64(MAX_NUM_CHILDREN)
+			complexityWeight := float64(node.FunctionProfile.CyclomaticComplexity) / float64(callTree.MaxCyclomaticComplexity)
+			nodeScore := W_HitFreq*hitFreqWeight + W_Rarity*rarityWeight + W_Depth*depthWeight + W_Branch*branchWeight + W_Complexity*complexityWeight
+
+			totalScore += nodeScore
+
+			node = node.Parent
+			depth++
 		}
-		group.ConstraintScore = calculateScore(*group, ast, sourceCode, functionProfiles)
-		result = append(result, *group)
+
+		// Create constraint group
+		group := ConstraintGroup{
+			GroupId:         uuid.New().String(),
+			Path:            path,
+			LeafFunction:    leafNode.FunctionProfile.FunctionName,
+			FileName:        leafNode.FunctionProfile.FunctionSourceFile,
+			TotalImportance: totalScore,
+		}
+
+		// Calculate constraint preference score
+		group.ConstraintScore = calculateScore(group, ast, sourceCode, functionProfiles)
+		groups = append(groups, group)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].TotalImportance > result[j].TotalImportance
+	// Sort groups by total importance
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].TotalImportance > groups[j].TotalImportance
 	})
 
+	// Limit to MAX_CONSTRAINTS
 	cut := MAX_CONSTRAINTS
-	if len(result) < MAX_CONSTRAINTS {
-		cut = len(result)
+	if len(groups) < MAX_CONSTRAINTS {
+		cut = len(groups)
 	}
 
-	return result[:cut]
+	return groups[:cut]
 }
 
 func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCode map[string][]byte, functionProfiles []*FunctionProfile) ConstraintScore {
-
-	// check whether ast contains group.FileName
-	tree, hasAST := ast[group.FileName]
-	if !hasAST {
-		log.Println("Warning: cannot find ast of " + group.FileName)
-		return ConstraintScore{}
+	// Initialize total scores
+	totalScores := ConstraintScore{
+		CT_VALUE_COMPARISON:     0,
+		CT_BITWISE_OPERATION:    0,
+		CT_STRING_MATCH:         0,
+		CT_ARITHMETIC_OPERATION: 0,
+		CT_COMPOUND_OPERATION:   0,
 	}
 
-	var funcNode *sitter.Node
-	if strings.HasPrefix(group.MainFunction, "_Z") {
-		for _, profile := range functionProfiles {
-			if profile.FunctionName == group.MainFunction {
-				startLine := profile.FunctionLinenumber
-				funcNode = findFunctionAtLine(tree, uint32(startLine))
-				log.Println("Found function " + group.MainFunction)
-				break
-			}
+	// Create function profile map for quick lookup
+	functionProfileMap := make(map[string]*FunctionProfile)
+	for _, profile := range functionProfiles {
+		functionProfileMap[profile.FunctionName] = profile
+	}
+
+	// Calculate score for each function in the path
+	for i, funcName := range group.Path {
+		// Get function profile
+		profile, ok := functionProfileMap[funcName]
+		if !ok {
+			continue
 		}
-	} else {
-		funcNode = findFunctionWithQuery(tree, sourceCode[group.FileName], group.MainFunction)
+
+		// Check if AST exists for this file
+		tree, hasAST := ast[profile.FunctionSourceFile]
+		if !hasAST {
+			log.Println("Warning: cannot find ast of " + profile.FunctionSourceFile)
+			continue
+		}
+
+		// Find function node
+		var funcNode *sitter.Node
+		if strings.HasPrefix(funcName, "_Z") {
+			funcNode = findFunctionAtLine(tree, uint32(profile.FunctionLinenumber))
+		} else {
+			funcNode = findFunctionWithQuery(tree, sourceCode[profile.FunctionSourceFile], funcName)
+		}
+
+		if funcNode == nil {
+			log.Println("Warning: cannot find function " + funcName + " in file " + profile.FunctionSourceFile)
+			continue
+		}
+
+		// Analyze function
+		scores := analyzeFunction(funcNode, sourceCode[profile.FunctionSourceFile])
+
+		// Apply weight: closer to leaf = higher weight
+		// Weight ranges from 0.5 (root) to 1.5 (leaf)
+		weight := 0.5 + (float64(i) / float64(len(group.Path)-1))
+
+		// Add weighted scores to total
+		for constraintType, score := range scores {
+			totalScores[constraintType] += score * weight
+		}
 	}
 
-	if funcNode == nil {
-		log.Println("Warning: cannot find function " + group.MainFunction + " in file " + group.FileName)
-		return ConstraintScore{}
+	// Normalize the scores
+	maxScore := 0.0
+	for _, score := range totalScores {
+		if score > maxScore {
+			maxScore = score
+		}
 	}
 
-	scores := analyzeFunction(funcNode, sourceCode[group.FileName])
+	if maxScore > 0 {
+		for constraintType, score := range totalScores {
+			totalScores[constraintType] = score / maxScore
+		}
+	}
 
-	return scores
-
+	return totalScores
 }

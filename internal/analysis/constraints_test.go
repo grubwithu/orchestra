@@ -2,41 +2,44 @@ package analysis
 
 import (
 	"testing"
+
 	"github.com/grubwithu/hfc/internal/utils/cdf"
 )
 
-// TestIdentifyImportantConstraints tests the IdentifyImportantConstraints function
-func TestIdentifyImportantConstraints(t *testing.T) {
-	// Create a simple call tree for testing
+// TestGetConstraintGroups tests the GetConstraintGroups function
+func TestGetConstraintGroups(t *testing.T) {
+	// Create a simple call tree for testing with leaf nodes
+	root := &CallTreeNode{
+		FunctionProfile: &FunctionProfile{
+			FunctionName:         "main",
+			CyclomaticComplexity: 1,
+		},
+	}
+
+	foo := &CallTreeNode{
+		FunctionProfile: &FunctionProfile{
+			FunctionName:         "foo",
+			FunctionSourceFile:   "test.cc",
+			CyclomaticComplexity: 5,
+		},
+		Parent: root,
+	}
+
+	bar := &CallTreeNode{
+		FunctionProfile: &FunctionProfile{
+			FunctionName:         "bar",
+			FunctionSourceFile:   "test.cc",
+			CyclomaticComplexity: 3,
+		},
+		Parent: root,
+	}
+
+	// Add children to make foo and bar leaf nodes
+	root.Children = []*CallTreeNode{foo, bar}
+
 	callTree := &CallTree{
-		Root: &CallTreeNode{
-			FunctionProfile: &FunctionProfile{
-				FunctionName:         "main",
-				CyclomaticComplexity: 1,
-			},
-		},
-		Nodes: []*CallTreeNode{
-			{
-				FunctionProfile: &FunctionProfile{
-					FunctionName:         "main",
-					CyclomaticComplexity: 1,
-				},
-			},
-			{
-				FunctionProfile: &FunctionProfile{
-					FunctionName:         "foo",
-					CyclomaticComplexity: 5,
-				},
-				Parent: nil,
-			},
-			{
-				FunctionProfile: &FunctionProfile{
-					FunctionName:         "bar",
-					CyclomaticComplexity: 3,
-				},
-				Parent: nil,
-			},
-		},
+		Root:                    root,
+		Nodes:                   []*CallTreeNode{root, foo, bar},
 		MaxDepth:                2,
 		MaxCyclomaticComplexity: 5,
 	}
@@ -51,88 +54,11 @@ func TestIdentifyImportantConstraints(t *testing.T) {
 	}
 
 	// Test the function
-	constraints := IdentifyImportantConstraints(callTree, progCovData)
+	groups := GetConstraintGroups(callTree, progCovData, nil, nil, nil)
 
-	// Check that we got some constraints
-	if len(constraints) == 0 {
-		t.Error("Expected at least one constraint, got none")
-	}
-
-	// Check that constraints are sorted by importance score
-	for i := 1; i < len(constraints); i++ {
-		if constraints[i-1].ImportanceScore < constraints[i].ImportanceScore {
-			t.Errorf("Constraints should be sorted by importance score in descending order")
-			break
-		}
-	}
-}
-
-// TestGroupConstraintsByFunction tests the GroupConstraintsByFunction function
-func TestGroupConstraintsByFunction(t *testing.T) {
-	// Create some mock constraints
-	constraints := []ImportantConstraint{
-		{
-			CallTreeNode: &CallTreeNode{
-				FunctionProfile: &FunctionProfile{
-					FunctionName:         "foo",
-					FunctionSourceFile:    "test.cc",
-					CyclomaticComplexity: 5,
-				},
-				Parent: &CallTreeNode{
-					FunctionProfile: &FunctionProfile{
-						FunctionName: "main",
-					},
-				},
-			},
-			ImportanceScore: 0.8,
-		},
-		{
-			CallTreeNode: &CallTreeNode{
-				FunctionProfile: &FunctionProfile{
-					FunctionName:         "foo",
-					FunctionSourceFile:    "test.cc",
-					CyclomaticComplexity: 5,
-				},
-				Parent: &CallTreeNode{
-					FunctionProfile: &FunctionProfile{
-						FunctionName: "main",
-					},
-				},
-			},
-			ImportanceScore: 0.6,
-		},
-		{
-			CallTreeNode: &CallTreeNode{
-				FunctionProfile: &FunctionProfile{
-					FunctionName:         "bar",
-					FunctionSourceFile:    "test.cc",
-					CyclomaticComplexity: 3,
-				},
-				Parent: &CallTreeNode{
-					FunctionProfile: &FunctionProfile{
-						FunctionName: "main",
-					},
-				},
-			},
-			ImportanceScore: 0.7,
-		},
-	}
-
-	// Create program coverage data
-	progCovData := &ProgCovData{
-		Functions: []FuncCov{
-			{Name: "main", Count: 100},
-			{Name: "foo", Count: 10},
-			{Name: "bar", Count: 50},
-		},
-	}
-
-	// Test the function
-	groups := GroupConstraintsByFunction(constraints, progCovData, nil, nil, nil)
-
-	// Check that we got the expected number of groups
+	// Check that we got the expected number of groups (should equal number of leaf nodes)
 	if len(groups) != 2 {
-		t.Errorf("Expected 2 groups, got %d", len(groups))
+		t.Errorf("Expected 2 groups (one per leaf node), got %d", len(groups))
 	}
 
 	// Check that groups are sorted by total importance
@@ -140,10 +66,18 @@ func TestGroupConstraintsByFunction(t *testing.T) {
 		t.Errorf("Groups should be sorted by total importance in descending order")
 	}
 
-	// Check that paths are generated
+	// Check that paths are generated correctly
 	for _, group := range groups {
-		if len(group.Paths) == 0 {
-			t.Errorf("Expected at least one path for group %s", group.MainFunction)
+		if len(group.Path) == 0 {
+			t.Errorf("Expected non-empty path for group %s", group.LeafFunction)
+		}
+		// Path should start with root function
+		if group.Path[0] != "main" {
+			t.Errorf("Expected path to start with 'main', got %s", group.Path[0])
+		}
+		// Path should end with leaf function
+		if group.Path[len(group.Path)-1] != group.LeafFunction {
+			t.Errorf("Expected path to end with leaf function %s, got %s", group.LeafFunction, group.Path[len(group.Path)-1])
 		}
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
 	"sync"
 
 	"github.com/grubwithu/hfc/internal/analysis"
@@ -75,26 +74,17 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 
 	// Calculate constraint groups if we have all necessary data
 	if ast != nil && sourceCode != nil {
-		// Identify important constraints
-		constraints := analysis.IdentifyImportantConstraints(&callTree, &prerunResult.ProgCov)
-		if len(constraints) > 0 {
-			// Group constraints by function
-			groups := analysis.GroupConstraintsByFunction(
-				constraints,
-				&prerunResult.ProgCov,
-				ast,
-				sourceCode,
-				callTree.ProgramProfile.AllFunctions.Elements,
-			)
+		// Generate constraint groups based on call tree leaf nodes
+		groups := analysis.GetConstraintGroups(
+			&callTree,
+			&prerunResult.ProgCov,
+			ast,
+			sourceCode,
+			callTree.ProgramProfile.AllFunctions.Elements,
+		)
 
-			// Sort groups by importance
-			sort.Slice(groups, func(i, j int) bool {
-				return groups[i].TotalImportance > groups[j].TotalImportance
-			})
-
-			// Update constraint groups
-			p.constraintGroups = groups
-		}
+		// Update constraint groups
+		p.constraintGroups = groups
 	}
 
 	// Calculate fuzzer scores if we have line coverage
@@ -110,7 +100,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		// Get important functions
 		importantFunctions := []string{}
 		for _, group := range p.constraintGroups {
-			importantFunctions = append(importantFunctions, group.MainFunction)
+			importantFunctions = append(importantFunctions, group.LeafFunction)
 		}
 
 		// Calculate score
