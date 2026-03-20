@@ -54,6 +54,7 @@ RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/f
     tar -xzf fuzzers.tgz && tar -xzf targets.tgz && rm fuzzers.tgz targets.tgz && \
     cd fuzzers && bash build.sh
 
+ADD "https://api.github.com/repos/grubwithu/hfc-introspector/commits?per_page=1" /dev/null
 RUN git clone https://github.com/grubwithu/hfc-introspector.git && \
     cd hfc-introspector && mkdir build && cd build && \
     CC=clang-21 CXX=clang++-21 cmake .. && make
