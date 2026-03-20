@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/grubwithu/hfc/internal/utils/cdf"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -49,7 +50,7 @@ func IdentifyImportantConstraints(callTree *CallTree, progCovData *ProgCovData) 
 	MAX_NUM_CHILDREN := len(callTree.Nodes) - 1
 	MIN_HITS := math.MaxInt
 	MAX_HITS := math.MinInt
-	covCdf := CDF{}
+	covCdf := cdf.NewCDF()
 	coverageMap := make(map[string]int)
 	for _, funcCoverage := range progCovData.Functions {
 		coverageMap[funcCoverage.Name] = funcCoverage.Count

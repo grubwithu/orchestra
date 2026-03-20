@@ -1,9 +1,15 @@
-package analysis
+package cdf
 
 import "container/list"
 
 type CDF struct {
-	Values list.List
+	Values *list.List
+}
+
+func NewCDF() *CDF {
+	return &CDF{
+		Values: list.New(),
+	}
 }
 
 func (cdf *CDF) Add(value float64) {

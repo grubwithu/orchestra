@@ -102,6 +102,11 @@ func llvmLineCovPreprocess(output string) []FileLineCov {
 
 	}
 
+	// Add the last item if it exists and has lines
+	if curItem != nil && len(curItem.Lines) > 0 {
+		progLineCov = append(progLineCov, *curItem)
+	}
+
 	return progLineCov
 
 }

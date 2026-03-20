@@ -21,7 +21,7 @@ Request Body:
 - `fuzzer` (string, required): The name of the fuzzer reporting the corpus.
 - `identity` (string, required): Unique identifier for the fuzzer instance.
 - `corpus` (array of strings, required): List of paths to corpus files or directories.
-- `period` (string, optional): Indicates the reporting period. Use `"begin"` to mark the start of a fuzzing cycle and save the initial coverage baseline for the fuzzer.
+- `period` (string, required): Indicates the reporting period. Use `"begin"` to mark the start of a fuzzing cycle and save the initial coverage baseline for the fuzzer.
 
 Response Body:
 ```json

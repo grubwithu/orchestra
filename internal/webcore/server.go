@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/grubwithu/hfc/internal/analysis"
 	"github.com/grubwithu/hfc/internal/plugin"
 	"github.com/grubwithu/hfc/internal/plugin/plugins/constraint"
 	"github.com/grubwithu/hfc/internal/plugin/plugins/coverage"
@@ -27,7 +26,7 @@ type Server struct {
 	PluginRegistry *plugin.Registry
 }
 
-func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server {
+func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch string) *Server {
 	router := gin.Default()
 
 	// Initialize plugin registry
@@ -51,21 +50,20 @@ func NewServer(port int, progPath *string, callTree *analysis.CallTree) *Server 
 	// Initialize plugins with PluginConfig
 	ctx := context.Background()
 	if err := prerunPlugin.Init(ctx, plugin.PluginConfig{
-		Executable: progPath,
-		CallTree:   callTree,
+		Executable:      progPath,
+		FuzzIntroPrefix: fuzzIntroPrefix,
+		SrcPathMatch:    srcPathMatch,
 	}); err != nil {
 		log.Printf("Error initializing prerun plugin: %v\n", err)
 	}
 
 	if err := coveragePlugin.Init(ctx, plugin.PluginConfig{
 		Executable: progPath,
-		CallTree:   callTree,
 	}); err != nil {
 		log.Printf("Error initializing coverage plugin: %v\n", err)
 	}
 	if err := constraintPlugin.Init(ctx, plugin.PluginConfig{
 		Executable: progPath,
-		CallTree:   callTree,
 	}); err != nil {
 		log.Printf("Error initializing constraint plugin: %v\n", err)
 	}

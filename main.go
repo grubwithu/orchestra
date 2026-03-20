@@ -6,16 +6,14 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/grubwithu/hfc/internal/analysis"
 	"github.com/grubwithu/hfc/internal/webcore"
 )
 
 func main() {
 	// Define command line arguments
 	executablePath := flag.String("program", "", "Program executable path, format: -program=xx.out")
-	profilePath := flag.String("profile", "", "Program profile file path, format: -profile=fuzzerLogFile-**.yaml")
-	callTreePath := flag.String("calltree", "", "Call tree file path, format: -calltree=fuzzerLogFile-**.data")
 	srcPathMatch := flag.String("srcpath", "build__HFC_qzmp__", "Replace the matched dir name in the source path, format: -srcpath=build__HFC_qzmp__")
+	fuzzIntroPrefix := flag.String("fuzzintro", "fuzzerLogFile-", "Prefix of the fuzz intro file, format: -fuzzintro=fuzzerLogFile-")
 	port := flag.Int("port", 8080, "Port number for the web server (default: 8080), format: -port=8080")
 	help := flag.Bool("h", false, "Display help information")
 
@@ -23,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	// Show help information and exit if -h is provided
-	if *help || *executablePath == "" || *profilePath == "" || *callTreePath == "" {
+	if *help || *executablePath == "" || *fuzzIntroPrefix == "" {
 		log.Println("Program Usage:")
 		flag.CommandLine.SetOutput(os.Stdout)
 		flag.PrintDefaults()
@@ -38,19 +36,7 @@ func main() {
 		log.Fatal("Error: llvm-cov is not installed\n")
 	}
 
-	// Parse the YAML file and get CallTree
-	// TODO: Calculate program profile use AST rather than external profile file
-	staticData, err := analysis.ParseProfileFromYAML(*profilePath, *srcPathMatch)
-	if err != nil {
-		log.Fatalf("Error parsing YAML: %v\n", err)
-	}
-
-	callTree, err := analysis.ParseCallTreeFromData(*callTreePath, staticData)
-	if err != nil {
-		log.Fatalf("Error parsing call tree data: %v\n", err)
-	}
-
-	webServer := webcore.NewServer(*port, executablePath, callTree)
+	webServer := webcore.NewServer(*port, *executablePath, *fuzzIntroPrefix, *srcPathMatch)
 	webServer.Start()
 
 	log.Println("We are done here. Have a nice day!")

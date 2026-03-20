@@ -2,7 +2,6 @@ package analysis
 
 import (
 	"log"
-	"sort"
 	"strings"
 
 	"github.com/gookit/goutil/arrutil"
@@ -259,7 +258,9 @@ func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 		return CT_ARITHMETIC_OPERATION
 	}
 
-	if strings.Contains(conditionCode, "&") || strings.Contains(conditionCode, "|") ||
+	// Check for bitwise operations (excluding logical operators)
+	if (strings.Contains(conditionCode, "&") && !strings.Contains(conditionCode, "&&")) ||
+		(strings.Contains(conditionCode, "|") && !strings.Contains(conditionCode, "||")) ||
 		strings.Contains(conditionCode, "^") || strings.Contains(conditionCode, "~") ||
 		strings.Contains(conditionCode, "<<") || strings.Contains(conditionCode, ">>") {
 		return CT_BITWISE_OPERATION
@@ -478,53 +479,4 @@ func analyzeFunction(funcNode *sitter.Node, sourceCode []byte) ConstraintScore {
 	}
 
 	return score
-}
-
-func SortConstraintGroup(constraintGroups []ConstraintGroup, fuzzerScore ConstraintScore, ast map[string]*sitter.Tree, sourceCode map[string][]byte) []ConstraintGroup {
-	// test whether fuzzerScore is all zero
-	allZero := true
-	for _, v := range fuzzerScore {
-		if v != 0 {
-			allZero = false
-			break
-		}
-	}
-	if allZero {
-		return constraintGroups
-	}
-
-	fuzzerCompatibility := map[string]float64{}
-
-	for _, group := range constraintGroups {
-		// check whether ast contains group.FileName
-		tree, hasAST := ast[group.FileName]
-		if !hasAST {
-			log.Println("Warning: cannot find ast of " + group.FileName)
-			fuzzerCompatibility[group.GroupId] = 0.0
-			continue
-		}
-
-		funcNode := findFunctionWithQuery(tree, sourceCode[group.FileName], group.MainFunction)
-		if funcNode == nil {
-			log.Println("Warning: cannot find function " + group.MainFunction + " in file " + group.FileName)
-			fuzzerCompatibility[group.GroupId] = 0.0
-			continue
-		}
-
-		scores := analyzeFunction(funcNode, sourceCode[group.FileName])
-		total := 0.0
-		for index := range scores {
-			total += scores[index] * fuzzerScore[index]
-		}
-		fuzzerCompatibility[group.GroupId] = total
-		log.Println("Function "+group.MainFunction+" ", total)
-	}
-
-	// sort constraintGroups by fuzzerCompatibility
-	sort.Slice(constraintGroups, func(i, j int) bool {
-		return fuzzerCompatibility[constraintGroups[i].GroupId] > fuzzerCompatibility[constraintGroups[j].GroupId]
-	})
-
-	return constraintGroups
-
 }

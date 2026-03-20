@@ -2,13 +2,12 @@ package plugin
 
 import (
 	"context"
-
-	"github.com/grubwithu/hfc/internal/analysis"
 )
 
 type PluginConfig struct {
-	CallTree   *analysis.CallTree
-	Executable *string
+	FuzzIntroPrefix string
+	Executable      string
+	SrcPathMatch    string
 }
 
 type PluginData struct {

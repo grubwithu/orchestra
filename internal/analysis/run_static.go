@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	sitter "github.com/smacker/go-tree-sitter"
@@ -63,6 +64,24 @@ type CallTree struct {
 	MaxDepth                int
 	ProgramProfile          *ProgramProfile
 	MaxCyclomaticComplexity int
+}
+
+// DebugInfo represents debug information parsed from a file
+type DebugInfo struct {
+	ModuleInfo         string
+	CompileUnits       []string                      // Support multiple compile units
+	Functions          map[string]*FunctionDebugInfo // Key is mangled name if available, otherwise function name
+	GlobalVariablesRaw string
+	TypesRaw           string
+}
+
+// FunctionDebugInfo represents debug information for a single function
+type FunctionDebugInfo struct {
+	Name         string
+	MangledName  string
+	SourceFile   string
+	LineNumber   int
+	OperandTypes []string
 }
 
 func (ctn *CallTreeNode) CountDescendantNode() int {
@@ -261,4 +280,123 @@ func GetProgramAST(executablePath string) (map[string]*sitter.Tree, error) {
 	}
 
 	return result, nil
+}
+
+// ParseDebugInfoFromFile parses debug information from a file
+func ParseDebugInfoFromFile(filePath string) (*DebugInfo, error) {
+	// Read the file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading debug info file: %w", err)
+	}
+
+	lines := strings.Split(string(data), "\n")
+	debugInfo := &DebugInfo{
+		CompileUnits: []string{},
+		Functions:    make(map[string]*FunctionDebugInfo),
+	}
+
+	// Regex patterns
+	subprogramPattern := regexp.MustCompile(`Subprogram: (.+)$`)
+	sourcePattern := regexp.MustCompile(`from\s+([^:]+)(?::(\d+))?(?:\s+\('([^']+)'\))?$`)
+
+	// State variables
+	var currentFunction *FunctionDebugInfo
+	var section string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Check section headers
+		if strings.Contains(line, "Debug Information for Module") {
+			debugInfo.ModuleInfo = line
+			continue
+		}
+
+		if strings.HasPrefix(line, "Compile unit:") {
+			debugInfo.CompileUnits = append(debugInfo.CompileUnits, line)
+			continue
+		}
+
+		if strings.HasPrefix(line, "## Functions defined in module") {
+			section = "functions"
+			continue
+		}
+
+		if strings.HasPrefix(line, "## Global variables in module") {
+			section = "globals"
+			continue
+		}
+
+		if strings.HasPrefix(line, "## Types defined in module") {
+			section = "types"
+			continue
+		}
+
+		// Process based on section
+		switch section {
+		case "functions":
+			// Check for new subprogram
+			if strings.HasPrefix(line, "Subprogram:") {
+				// Save previous function if exists
+				if currentFunction != nil {
+					// Determine key: use mangled name if available, otherwise function name
+					key := currentFunction.Name
+					if currentFunction.MangledName != "" {
+						key = currentFunction.MangledName
+					}
+					debugInfo.Functions[key] = currentFunction
+				}
+
+				// Parse new function
+				matches := subprogramPattern.FindStringSubmatch(line)
+				if len(matches) >= 2 {
+					currentFunction = &FunctionDebugInfo{
+						Name:         matches[1],
+						OperandTypes: []string{},
+					}
+				}
+			} else if currentFunction != nil {
+				// Parse source file, line number, and mangled name
+				if strings.HasPrefix(line, "from ") {
+					matches := sourcePattern.FindStringSubmatch(line)
+					if len(matches) >= 2 {
+						currentFunction.SourceFile = matches[1]
+						if len(matches) >= 3 && matches[2] != "" {
+							fmt.Sscanf(matches[2], "%d", &currentFunction.LineNumber)
+						}
+						if len(matches) >= 4 && matches[3] != "" {
+							currentFunction.MangledName = matches[3]
+						}
+					}
+				} else if strings.HasPrefix(line, "- Operand Type:") {
+					// Parse operand type
+					currentFunction.OperandTypes = append(currentFunction.OperandTypes, line)
+				}
+			}
+
+		case "globals":
+			// Collect raw global variables section
+			if line != "" && !strings.HasPrefix(line, "##") {
+				debugInfo.GlobalVariablesRaw += line + "\n"
+			}
+
+		case "types":
+			// Collect raw types section
+			if line != "" && !strings.HasPrefix(line, "##") {
+				debugInfo.TypesRaw += line + "\n"
+			}
+		}
+	}
+
+	// Save the last function
+	if currentFunction != nil {
+		key := currentFunction.Name
+		if currentFunction.MangledName != "" {
+			key = currentFunction.MangledName
+		}
+		debugInfo.Functions[key] = currentFunction
+	}
+
+	return debugInfo, nil
 }

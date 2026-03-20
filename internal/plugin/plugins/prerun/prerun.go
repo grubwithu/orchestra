@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/grubwithu/hfc/internal/analysis"
 	"github.com/grubwithu/hfc/internal/plugin"
@@ -13,6 +14,8 @@ import (
 )
 
 type PrerunData struct {
+	CallTree   analysis.CallTree
+	DebugInfo  analysis.DebugInfo
 	Cov        int
 	ProgCov    analysis.ProgCovData
 	LineCov    []analysis.FileLineCov
@@ -50,11 +53,30 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	p.config = config
 
 	// Get executable from config
-	if config.Executable == nil {
+	if config.Executable == "" {
 		log.Printf("PrerunPlugin: executable not provided in config\n")
 		return nil
 	}
-	executable := *config.Executable
+	executable := config.Executable
+
+	prefix := strings.TrimSpace(config.FuzzIntroPrefix)
+	profilePath := prefix + ".yaml"
+	staticData, err := analysis.ParseProfileFromYAML(profilePath, config.SrcPathMatch)
+	if err != nil {
+		log.Fatalf("Error parsing YAML: %v\n", err)
+	}
+
+	callTreePath := prefix
+	callTree, err := analysis.ParseCallTreeFromData(callTreePath, staticData)
+	if err != nil {
+		log.Fatalf("Error parsing call tree data: %v\n", err)
+	}
+
+	debugInfoPath := prefix + ".debug_info"
+	debugInfo, err := analysis.ParseDebugInfoFromFile(debugInfoPath)
+	if err != nil {
+		log.Fatalf("Error parsing debug info: %v\n", err)
+	}
 
 	// 1. Create a temp directory for initial corpus
 	corpusDir, err := os.MkdirTemp("", "hfc_corpus_")
@@ -119,6 +141,8 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 		LineCov:    fileLineCovs,
 		AST:        ast,
 		SourceCode: sourceCode,
+		CallTree:   *callTree,
+		DebugInfo:  *debugInfo,
 	}
 	p.isInitialized = true
 
@@ -134,10 +158,10 @@ func (p *Plugin) GetInitData() PrerunData {
 // Process processes the corpus and generates coverage data
 func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	// Get executable from config
-	if p.config.Executable == nil {
+	if p.config.Executable == "" {
 		return nil
 	}
-	executable := *p.config.Executable
+	executable := p.config.Executable
 
 	// Create temporary work directory
 	workDir, err := os.MkdirTemp("", "hfc_work_")

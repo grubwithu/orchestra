@@ -70,11 +70,12 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	// Get AST and SourceCode from prerun result
 	ast := prerunResult.AST
 	sourceCode := prerunResult.SourceCode
+	callTree := prerunResult.CallTree
 
 	// Calculate constraint groups if we have all necessary data
-	if ast != nil && sourceCode != nil && p.config.CallTree != nil {
+	if ast != nil && sourceCode != nil {
 		// Identify important constraints
-		constraints := analysis.IdentifyImportantConstraints(p.config.CallTree, &prerunResult.ProgCov)
+		constraints := analysis.IdentifyImportantConstraints(&callTree, &prerunResult.ProgCov)
 		if len(constraints) > 0 {
 			// Group constraints by function
 			groups := analysis.GroupConstraintsByFunction(
@@ -82,7 +83,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 				&prerunResult.ProgCov,
 				ast,
 				sourceCode,
-				p.config.CallTree.ProgramProfile.AllFunctions.Elements,
+				callTree.ProgramProfile.AllFunctions.Elements,
 			)
 
 			// Sort groups by importance
