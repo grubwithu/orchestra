@@ -14,34 +14,47 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Define a struct to match the structure of your YAML file
-// You'll need to adjust this based on your actual YAML content
-
 type Callsite struct {
 	Src string `yaml:"Src"`
 	Dst string `yaml:"Dst"`
 }
 
+type BranchSide struct {
+	BranchSide      string   `yaml:"BranchSide"`
+	BranchSideFuncs []string `yaml:"BranchSideFuncs"`
+}
+
+type BranchProfile struct {
+	BranchString        string       `yaml:"BranchString"`
+	BranchSides         []BranchSide `yaml:"BranchSides"`
+	IsRegisterImmediate bool         `yaml:"IsRegisterImmediate"`
+	IsRegisterRegister  bool         `yaml:"IsRegisterRegister"`
+	LeftOperand         string       `yaml:"LeftOperand"`
+	RightOperand        string       `yaml:"RightOperand"`
+	ImmediateValue      int          `yaml:"ImmediateValue"`
+	CaseValues          []int        `yaml:"CaseValues"`
+}
+
 type FunctionProfile struct {
-	FunctionName          string     `yaml:"functionName"`
-	FunctionSourceFile    string     `yaml:"functionSourceFile"`
-	LinkageType           string     `yaml:"linkageType"`
-	FunctionLinenumber    int        `yaml:"functionLinenumber"`
-	FunctionLinenumberEnd int        `yaml:"functionLinenumberEnd"`
-	FunctionDepth         int        `yaml:"functionDepth"`
-	ReturnType            string     `yaml:"returnType"`
-	ArgCount              int        `yaml:"argCount"`
-	ArgTypes              []string   `yaml:"argTypes"`
-	ConstantsTouched      []string   `yaml:"constantsTouched"` // Assuming strings, adjust as needed
-	ArgNames              []string   `yaml:"argNames"`
-	BBCount               int        `yaml:"BBCount"`
-	ICount                int        `yaml:"ICount"`
-	EdgeCount             int        `yaml:"EdgeCount"`
-	CyclomaticComplexity  int        `yaml:"CyclomaticComplexity"`
-	FunctionsReached      []string   `yaml:"functionsReached"` // Assuming strings, adjust as needed
-	FunctionUses          int        `yaml:"functionUses"`
-	BranchProfiles        []string   `yaml:"BranchProfiles"` // Assuming strings, adjust as needed
-	Callsites             []Callsite `yaml:"Callsites"`      // Assuming strings, adjust as needed
+	FunctionName          string          `yaml:"functionName"`
+	FunctionSourceFile    string          `yaml:"functionSourceFile"`
+	LinkageType           string          `yaml:"linkageType"`
+	FunctionLinenumber    int             `yaml:"functionLinenumber"`
+	FunctionLinenumberEnd int             `yaml:"functionLinenumberEnd"`
+	FunctionDepth         int             `yaml:"functionDepth"`
+	ReturnType            string          `yaml:"returnType"`
+	ArgCount              int             `yaml:"argCount"`
+	ArgTypes              []string        `yaml:"argTypes"`
+	ConstantsTouched      []string        `yaml:"constantsTouched"` // Assuming strings, adjust as needed
+	ArgNames              []string        `yaml:"argNames"`
+	BBCount               int             `yaml:"BBCount"`
+	ICount                int             `yaml:"ICount"`
+	EdgeCount             int             `yaml:"EdgeCount"`
+	CyclomaticComplexity  int             `yaml:"CyclomaticComplexity"`
+	FunctionsReached      []string        `yaml:"functionsReached"` // Assuming strings, adjust as needed
+	FunctionUses          int             `yaml:"functionUses"`
+	BranchProfiles        []BranchProfile `yaml:"BranchProfiles"` // Assuming strings, adjust as needed
+	Callsites             []Callsite      `yaml:"Callsites"`      // Assuming strings, adjust as needed
 }
 
 type ProgramProfile struct {
