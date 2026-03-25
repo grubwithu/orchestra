@@ -14,6 +14,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+JOBS=$(($(grep -c ^processor /proc/cpuinfo) < 16 ? $(grep -c ^processor /proc/cpuinfo) : 16))
+
 cd libpng
 git checkout ba980b8 
 
@@ -24,7 +26,7 @@ DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
-  ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
+  clang++ -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
     -I$(pwd)/install/include \
     ../contrib/oss-fuzz/libpng_read_fuzzer.cc \
     ../../../pfuzzer/build/libfuzzer.a \
@@ -40,7 +42,7 @@ export CC="clang"
 export CXX="clang++"
 export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-../configure --disable-shared --prefix=$(pwd)/install && make -j && make install
+../configure --disable-shared --prefix=$(pwd)/install && make -j$JOBS && make install
 
 ${CC} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FLAGS \
   -I$(pwd)/install/include \
@@ -63,7 +65,7 @@ export CC="gclang"
 export CXX="gclang++"
 export CXXFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-../configure --disable-shared --prefix=$(pwd)/install && make -j && make install
+../configure --disable-shared --prefix=$(pwd)/install && make -j$JOBS && make install
 
 ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
   -I$(pwd)/install/include \

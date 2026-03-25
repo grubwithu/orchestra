@@ -1,15 +1,22 @@
 # Gitignore for Go project
 # Compiled files
+
+.vscode/
+build/
+venv/
+tmp/
+tmp_xx223/
+
 *.o
 *.a
 *.so
 *.dll
-.vscode/
-
-build/
-
-venv/
-
 *.profraw
+.env.fish
+fuzzerLogFile*
+*.out
+*.ll
+*.dot
+*.bc
 
-tmp_xx223/
+Orchestra/

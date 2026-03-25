@@ -1,8 +1,0 @@
-*.profraw
-.env.fish
-fuzzerLogFile*
-*.out
-tmp/
-*.ll
-*.dot
-*.bc

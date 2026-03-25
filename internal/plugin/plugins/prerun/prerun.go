@@ -1,5 +1,10 @@
 package prerun
 
+/**
+ * Prerun plugin handles initial corpus processing
+ * Prerun plugin must be the first plugin in the pipeline
+ **/
+
 import (
 	"context"
 	"log"
@@ -54,7 +59,7 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 
 	// Get executable from config
 	if config.Executable == "" {
-		log.Printf("PrerunPlugin: executable not provided in config\n")
+		p.Log(ctx, "executable not provided in config\n")
 		return nil
 	}
 	executable := config.Executable
@@ -63,28 +68,28 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	profilePath := prefix + ".yaml"
 	staticData, err := analysis.ParseProfileFromYAML(profilePath, config.SrcPathMatch)
 	if err != nil {
-		log.Printf("Error parsing YAML: %v\n", err)
+		p.Log(ctx, "Error parsing YAML: %v\n", err)
 		return err
 	}
 
 	callTreePath := prefix
 	callTree, err := analysis.ParseCallTreeFromData(callTreePath, staticData)
 	if err != nil {
-		log.Printf("Error parsing call tree data: %v\n", err)
+		p.Log(ctx, "Error parsing call tree data: %v\n", err)
 		return err
 	}
 
 	debugInfoPath := prefix + ".debug_info"
 	debugInfo, err := analysis.ParseDebugInfoFromFile(debugInfoPath)
 	if err != nil {
-		log.Printf("Error parsing debug info: %v\n", err)
+		p.Log(ctx, "Error parsing debug info: %v\n", err)
 		return err
 	}
 
 	// 1. Create a temp directory for initial corpus
 	corpusDir, err := os.MkdirTemp("", "hfc_corpus_")
 	if err != nil {
-		log.Printf("Error creating corpus directory: %v\n", err)
+		p.Log(ctx, "Error creating corpus directory: %v\n", err)
 		return err
 	}
 	defer os.RemoveAll(corpusDir)
@@ -92,14 +97,14 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	// 2. Create seed file
 	seedPath := filepath.Join(corpusDir, "seed")
 	if err := os.WriteFile(seedPath, []byte("0"), 0644); err != nil {
-		log.Printf("Error writing seed file: %v\n", err)
+		p.Log(ctx, "Error writing seed file: %v\n", err)
 		return err
 	}
 
 	// 3. Create a temp work directory
 	workDir, err := os.MkdirTemp("", "hfc_work_")
 	if err != nil {
-		log.Printf("Error creating work directory: %v\n", err)
+		p.Log(ctx, "Error creating work directory: %v\n", err)
 		return err
 	}
 	defer os.RemoveAll(workDir)
@@ -107,21 +112,21 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	// 4. Run analysis to generate profdata
 	cov, profdataPath, err := analysis.RunOnceForProfdata(workDir, executable, corpusDir)
 	if err != nil {
-		log.Printf("Error running RunOnceForProfdata: %v\n", err)
+		p.Log(ctx, "Error running RunOnceForProfdata: %v\n", err)
 		return err
 	}
 
 	// 5. Get program coverage data
 	progCovData, err := analysis.GetProgCov(workDir, executable, profdataPath)
 	if err != nil {
-		log.Printf("Error getting program coverage data: %v\n", err)
+		p.Log(ctx, "Error getting program coverage data: %v\n", err)
 		return err
 	}
 
 	// 6. Get line coverage data
 	fileLineCovs, err := analysis.GetLineCov(workDir, executable, profdataPath)
 	if err != nil {
-		log.Printf("Error getting line coverage data: %v\n", err)
+		p.Log(ctx, "Error getting line coverage data: %v\n", err)
 		return err
 	}
 
@@ -155,7 +160,11 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	}
 	p.isInitialized = true
 
-	log.Printf("PrerunPlugin initialized with coverage: %d\n", cov)
+	if p.config.Verbose {
+		p.Log(ctx, "Init: coverage=%d, funcs=%d, files=%d\n", cov, len(progCovData.Functions), len(fileLineCovs))
+	} else {
+		p.Log(ctx, "Initialized\n")
+	}
 	return nil
 }
 
@@ -175,7 +184,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	// Create temporary work directory
 	workDir, err := os.MkdirTemp("", "hfc_work_")
 	if err != nil {
-		log.Printf("Error creating work directory: %v\n", err)
+		p.Log(ctx, "Error creating work directory: %v\n", err)
 		return err
 	}
 	defer os.RemoveAll(workDir)
@@ -183,36 +192,37 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	// Run analysis to generate profdata
 	cov, profdataPath, err := analysis.RunOnceForProfdata(workDir, executable, data.Corpus)
 	if err != nil {
-		log.Printf("Error running RunOnceForProfdata: %v\n", err)
+		p.Log(ctx, "Error running RunOnceForProfdata: %v\n", err)
 		return err
 	}
 
 	// Get program coverage data
 	progCovData, err := analysis.GetProgCov(workDir, executable, profdataPath)
 	if err != nil {
-		log.Printf("Error getting program coverage data: %v\n", err)
+		p.Log(ctx, "Error getting program coverage data: %v\n", err)
 		return err
 	}
 
 	// Get line coverage data
 	lineCov, err := analysis.GetLineCov(workDir, executable, profdataPath)
 	if err != nil {
-		log.Printf("Error getting line coverage data: %v\n", err)
+		p.Log(ctx, "Error getting line coverage data: %v\n", err)
 		return err
 	}
 
 	// Store results in PluginData
-	prerunResult := PrerunData{
-		Cov:        cov,
-		ProgCov:    progCovData,
-		LineCov:    lineCov,
-		AST:        p.initData.AST,
-		SourceCode: p.initData.SourceCode,
-	}
+	prerunResult := p.initData
+	prerunResult.Cov = cov
+	prerunResult.ProgCov = progCovData
+	prerunResult.LineCov = lineCov
 
 	data.Data["prerun"] = prerunResult
 
-	log.Printf("PrerunPlugin processed corpus %s for fuzzer %s\n", data.Corpus, data.Fuzzer)
+	if p.config.Verbose {
+		p.Log(ctx, "Process: fuzzer=%s, corpus=%s, coverage=%d, funcs=%d, files=%d\n", data.Fuzzer, data.Corpus, cov, len(progCovData.Functions), len(lineCov))
+	} else {
+		p.Log(ctx, "Processed corpus for fuzzer=%s\n", data.Fuzzer)
+	}
 
 	return nil
 }
@@ -231,4 +241,8 @@ func (p *Plugin) Cleanup(ctx context.Context) error {
 // Priority returns the plugin priority
 func (p *Plugin) Priority() int {
 	return 1000 // Highest priority to run first
+}
+
+func (p *Plugin) Log(ctx context.Context, format string, args ...any) {
+	log.Printf("[PRERUN] "+format, args...)
 }

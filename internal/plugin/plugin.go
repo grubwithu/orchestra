@@ -8,6 +8,7 @@ type PluginConfig struct {
 	FuzzIntroPrefix string
 	Executable      string
 	SrcPathMatch    string
+	Verbose         bool
 }
 
 type PluginData struct {
@@ -15,7 +16,8 @@ type PluginData struct {
 	Fuzzer string
 	Corpus string
 	Period string
-	TaskID string
+	Budge  int
+	JobID  int
 
 	// Pass data among plugins, temporary storage
 	Data map[string]any
@@ -42,6 +44,9 @@ type Plugin interface {
 
 	// Cleanup releases resources used by the plugin
 	Cleanup(ctx context.Context) error
+
+	// Log wrapper for log.Printf
+	Log(ctx context.Context, format string, args ...any)
 }
 
 // PluginWithPriority represents a plugin that can be prioritized

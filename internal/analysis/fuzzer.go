@@ -1,5 +1,12 @@
 package analysis
 
+/**
+ * GetFuzzerScore - get fuzzer score from constraint groups.
+ *
+ * We believe that different fuzzers have varying preferences for different types of constraints.
+ * Therefore, we can calculate a preference score for each fuzzer regarding various constraint types.
+ **/
+
 import (
 	"log"
 	"strings"
@@ -41,6 +48,7 @@ func UpdateFuzzerScore(cur ConstraintScore, prev ConstraintScore) ConstraintScor
 			prev[ct] = cur[ct]
 		}
 	}
+
 	return prev
 }
 
@@ -379,6 +387,19 @@ func CalculateFuzzerScore(
 	}
 	log.Println("Fuzzer", fuzzerName, "find", AllIncreaseCount, "increases in total,", ImportantIncreaseCount, "of them are important")
 	// log.Printf("Fuzzer score calculated: %+v", score)
+	return score
+}
+
+func NormalizeScore(score ConstraintScore) ConstraintScore {
+	maxScore := 0.0
+	for _, v := range score {
+		if v > maxScore {
+			maxScore = v
+		}
+	}
+	for k := range score {
+		score[k] /= maxScore
+	}
 	return score
 }
 

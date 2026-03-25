@@ -1,5 +1,11 @@
 package analysis
 
+/**
+ * RunStatic - get static coverage data from input files.
+ *
+ * NOTE: GetProgramAST get AST using the output of llvm-cov actually.
+ **/
+
 import (
 	"bytes"
 	"context"

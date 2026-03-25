@@ -110,10 +110,9 @@ PROG_FILE=$(realpath ${PROGNAME}_cov)
 popd
 popd
 if [ $HFC_ONLY -eq 0 ]; then
-  build/hfc -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1 & HFC_PID=$!
-  sleep 5
+  build/hfc -verbose -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1 & HFC_PID=$!
 elif [ $HFC_ONLY -eq 1 ]; then
-  build/hfc -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1
+  build/hfc -verbose -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1
 fi
 
 ## 5. Run pfuzzer

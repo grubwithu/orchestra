@@ -14,6 +14,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+JOBS=$(($(grep -c ^processor /proc/cpuinfo) < 16 ? $(grep -c ^processor /proc/cpuinfo) : 16))
 
 cd harfbuzz
 git checkout a1d9bfe
@@ -22,7 +23,7 @@ DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
-  ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
+  clang++ -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
     -lstdc++ \
     -I$(pwd)/install/include \
     -I../src \
@@ -41,7 +42,7 @@ export CXX="clang++"
 export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 cmake .. -DBUILD_SHARED_LIBS=false -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_BUILD_TYPE=Debug
-make -j && make install
+make -j$JOBS && make install
 ${CC} -fsanitize=fuzzer -fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS \
   -lstdc++ \
   -I$(pwd)/install/include \
@@ -68,7 +69,7 @@ export CXX="gclang++"
 export CXXFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 cmake .. -DBUILD_SHARED_LIBS=false -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DCMAKE_BUILD_TYPE=Debug
-make -j && make install
+make -j$JOBS && make install
 ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
   -lstdc++ \
   -I$(pwd)/install/include \

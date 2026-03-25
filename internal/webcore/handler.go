@@ -8,16 +8,9 @@ import (
 	"os/exec"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/grubwithu/hfc/internal/analysis"
 	"github.com/grubwithu/hfc/internal/plugin"
 )
-
-func generateTaskID() (TaskID, error) {
-	return TaskID(uuid.New().String()), nil
-}
-
-type TaskID string
 
 type APIResponse struct {
 	Success bool   `json:"success"`
@@ -26,20 +19,23 @@ type APIResponse struct {
 }
 
 type CorpusReportReqBody struct {
-	Fuzzer   string   `json:"fuzzer"`
-	Identity string   `json:"identity"`
-	Corpus   []string `json:"corpus"`
-	Period   string   `json:"period"`
+	Fuzzer    string   `json:"fuzzer"`
+	JobId     int      `json:"job_id"`
+	JobBudget int      `json:"job_budget"`
+	Identity  string   `json:"identity"`
+	Corpus    []string `json:"corpus"`
+	Period    string   `json:"period"`
 }
 
-func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string, period string) {
+func (s *Server) processCorpus(reqBody CorpusReportReqBody) {
 	// Create plugin data with basic information
 	ctx := context.Background()
 	pluginData := &plugin.PluginData{
-		Fuzzer: fuzzer,
-		Corpus: corpus,
-		Period: period,
-		TaskID: string(taskID),
+		Fuzzer: reqBody.Fuzzer,
+		Corpus: reqBody.Corpus[0],
+		Period: reqBody.Period,
+		JobID:  reqBody.JobId,
+		Budge:  reqBody.JobBudget,
 	}
 
 	// Process through plugin pipeline
@@ -49,14 +45,14 @@ func (s *Server) processCorpus(taskID TaskID, fuzzer string, corpus string, peri
 		}
 	}
 
-	log.Printf("Processed corpus item %s for task %s.\n", corpus, taskID)
+	log.Printf("Processed corpus item %s for task %d.\n", reqBody.Corpus[0], reqBody.JobId)
 
 	// rm - corpusDir
-	os.RemoveAll(corpus)
+	os.RemoveAll(reqBody.Corpus[0])
 }
 
 type ReportCorpusResponse struct {
-	TaskID TaskID `json:"task_id"`
+	JobId int `json:"job_id"`
 }
 
 func (s *Server) handleReportCorpus(c *gin.Context) {
@@ -98,17 +94,9 @@ func (s *Server) handleReportCorpus(c *gin.Context) {
 		}
 	}
 
-	taskID, err := generateTaskID()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, APIResponse{
-			Success: false,
-			Message: "Failed to generate task ID",
-		})
-		return
-	}
-
 	go func() {
-		s.processCorpus(taskID, report.Fuzzer, corpusDir, report.Period)
+		report.Corpus = []string{corpusDir}
+		s.processCorpus(report)
 		defer os.RemoveAll(corpusDir)
 	}()
 

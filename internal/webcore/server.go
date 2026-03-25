@@ -10,9 +10,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/grubwithu/hfc/internal/plugin"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/constraint"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/coverage"
+	"github.com/grubwithu/hfc/internal/plugin/plugins/fuzzer"
 	"github.com/grubwithu/hfc/internal/plugin/plugins/prerun"
+	"github.com/grubwithu/hfc/internal/plugin/plugins/seed"
 )
 
 const (
@@ -22,8 +22,9 @@ const (
 )
 
 type Server struct {
-	Router *gin.Engine
-	Port   int
+	Router  *gin.Engine
+	Port    int
+	Verbose bool
 
 	Ready      bool
 	ReadyMutex sync.Mutex
@@ -32,7 +33,7 @@ type Server struct {
 	PluginRegistry *plugin.Registry
 }
 
-func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch string) *Server {
+func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch string, verbose bool) *Server {
 	router := gin.Default()
 
 	// Initialize plugin registry
@@ -40,17 +41,17 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 
 	// Register default plugins
 	prerunPlugin := prerun.NewPlugin()
-	coveragePlugin := coverage.NewPlugin()
-	constraintPlugin := constraint.NewPlugin()
+	seedPlugin := seed.NewPlugin()
+	fuzzerPlugin := fuzzer.NewPlugin()
 
 	if err := pluginRegistry.Register(prerunPlugin); err != nil {
 		log.Printf("Error registering prerun plugin: %v\n", err)
 	}
-	if err := pluginRegistry.Register(coveragePlugin); err != nil {
-		log.Printf("Error registering coverage plugin: %v\n", err)
+	if err := pluginRegistry.Register(seedPlugin); err != nil {
+		log.Printf("Error registering seed plugin: %v\n", err)
 	}
-	if err := pluginRegistry.Register(constraintPlugin); err != nil {
-		log.Printf("Error registering constraint plugin: %v\n", err)
+	if err := pluginRegistry.Register(fuzzerPlugin); err != nil {
+		log.Printf("Error registering fuzzer plugin: %v\n", err)
 	}
 
 	server := &Server{
@@ -58,6 +59,7 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 		Port:           port,
 		PluginRegistry: pluginRegistry,
 		Ready:          false,
+		Verbose:        verbose,
 	}
 	server.setupRoutes()
 	go server.initPlugins(progPath, fuzzIntroPrefix, srcPathMatch)
@@ -87,6 +89,7 @@ func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMat
 			Executable:      progPathAbs,
 			FuzzIntroPrefix: fuzzIntroPrefixAbs,
 			SrcPathMatch:    srcPathMatch,
+			Verbose:         s.Verbose,
 		}); err != nil {
 			log.Printf("Error initializing plugin %s: %v\n", p.Name(), err)
 			os.Exit(1)

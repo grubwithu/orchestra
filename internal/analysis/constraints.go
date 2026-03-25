@@ -1,7 +1,10 @@
 package analysis
 
+/**
+ * GetConstraintGroups - get constraint groups from call tree leaf nodes.
+ **/
+
 import (
-	"log"
 	"math"
 	"slices"
 	"sort"
@@ -14,7 +17,7 @@ import (
 
 var (
 	IMPORTANCE_SCORE_THRESHOLD = 0.5
-	MAX_CONSTRAINTS            = 30
+	MAX_CONSTRAINTS            = math.MaxInt
 )
 var (
 	W_HitFreq    = 0.10
@@ -36,12 +39,13 @@ type ConstraintGroup struct {
 // GetConstraintGroups generates constraint groups based on call tree leaf nodes
 // Each constraint group represents a path from root to leaf in the call tree
 func GetConstraintGroups(callTree *CallTree, progCovData *ProgCovData, ast map[string]*sitter.Tree, sourceCode map[string][]byte, functionProfiles []*FunctionProfile) []ConstraintGroup {
-	// create a map of function coverage
+	// create a map of function coverage and region coverage
 	MAX_NUM_CHILDREN := len(callTree.Nodes) - 1
 	MIN_HITS := math.MaxInt
 	MAX_HITS := math.MinInt
 	covCdf := cdf.NewCDF()
 	coverageMap := make(map[string]int)
+	regionCoverageMap := make(map[string]float64)
 	for _, funcCoverage := range progCovData.Functions {
 		coverageMap[funcCoverage.Name] = funcCoverage.Count
 		covCdf.Add(float64(funcCoverage.Count))
@@ -50,6 +54,20 @@ func GetConstraintGroups(callTree *CallTree, progCovData *ProgCovData, ast map[s
 		}
 		if funcCoverage.Count > MAX_HITS {
 			MAX_HITS = funcCoverage.Count
+		}
+
+		// Calculate region coverage ratio
+		totalRegions := len(funcCoverage.Regions)
+		executedRegions := 0
+		for _, region := range funcCoverage.Regions {
+			if len(region) > REGION_EXEC_CNT && region[REGION_EXEC_CNT] > 0 {
+				executedRegions++
+			}
+		}
+		if totalRegions > 0 {
+			regionCoverageMap[funcCoverage.Name] = float64(executedRegions) / float64(totalRegions)
+		} else {
+			regionCoverageMap[funcCoverage.Name] = 0
 		}
 	}
 
@@ -85,19 +103,15 @@ func GetConstraintGroups(callTree *CallTree, progCovData *ProgCovData, ast map[s
 				continue
 			}
 
-			// Calculate individual node score (same as before)
+			// Calculate individual node score
 			hitFreqWeight := (float64(coverageMap[node.FunctionProfile.FunctionName]) - float64(MIN_HITS)) / float64(MAX_HITS-MIN_HITS)
-			if hitFreqWeight >= 0.3 {
-				node = node.Parent
-				depth++
-				continue
-			}
-			hitFreqWeight = hitFreqWeight / 0.3
 			rarityWeight := 1.0 - covCdf.GetCDFValue(float64(coverageMap[node.FunctionProfile.FunctionName]))
 			depthWeight := math.Sqrt(float64(node.GetUpperDepth()) / float64(callTree.MaxDepth))
 			branchWeight := float64(node.CountDescendantNode()) / float64(MAX_NUM_CHILDREN)
 			complexityWeight := float64(node.FunctionProfile.CyclomaticComplexity) / float64(callTree.MaxCyclomaticComplexity)
-			nodeScore := W_HitFreq*hitFreqWeight + W_Rarity*rarityWeight + W_Depth*depthWeight + W_Branch*branchWeight + W_Complexity*complexityWeight
+			// Add region coverage weight (inverted, so lower coverage gives higher weight)
+			regionCoverageWeight := 1.0 - regionCoverageMap[node.FunctionProfile.FunctionName]
+			nodeScore := W_HitFreq*hitFreqWeight + W_Rarity*rarityWeight + W_Depth*depthWeight + W_Branch*branchWeight + W_Complexity*complexityWeight + 0.1*regionCoverageWeight
 
 			totalScore += nodeScore
 
@@ -160,7 +174,6 @@ func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCo
 		// Check if AST exists for this file
 		tree, hasAST := ast[profile.FunctionSourceFile]
 		if !hasAST {
-			log.Println("Warning: cannot find ast of " + profile.FunctionSourceFile)
 			continue
 		}
 
@@ -173,7 +186,6 @@ func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCo
 		}
 
 		if funcNode == nil {
-			log.Println("Warning: cannot find function " + funcName + " in file " + profile.FunctionSourceFile)
 			continue
 		}
 
@@ -201,6 +213,11 @@ func calculateScore(group ConstraintGroup, ast map[string]*sitter.Tree, sourceCo
 	if maxScore > 0 {
 		for constraintType, score := range totalScores {
 			totalScores[constraintType] = score / maxScore
+		}
+	} else {
+		// If all scores are 0, set them to 0 (avoid NaN)
+		for constraintType := range totalScores {
+			totalScores[constraintType] = 0
 		}
 	}
 

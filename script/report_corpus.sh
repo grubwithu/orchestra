@@ -8,8 +8,12 @@ if [ ! -d "$CORPUS" ]; then
 fi
 CORPUS=$(realpath $CORPUS)
 
+PERIOD=$2
+if [ -z "$PERIOD" ]; then
+  PERIOD="begin"
+fi
 
 curl -X POST -H "Content-Type: application/json" \
-  -d '{"fuzzer": "AFL", "identity": "master_1", "corpus": ["'$CORPUS'"]}' \
+  -d '{"fuzzer": "AFL", "period": "'$PERIOD'", "identity": "master_1", "corpus": ["'$CORPUS'"]}' \
   http://localhost:8080/reportCorpus
 

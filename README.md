@@ -53,3 +53,11 @@ $ docker build -t hfc-test:latest .
 1. [pfuzzer] Modify `GetJobSeeds` to support fuzzing strategy.
 2. [HFC] Add more methods to choose constraint group 
 
+## TODO 26.3.23
+
+1. JSON Region (Un)covered count (DONE)
+2. Module 1 Global JSON Calculation (DONE) -> Important Function CallTrace (DONE) -> Weight Calculation (DONE) -> Analysis Constraint Feature Count(AST) (DONE) -> Extract TOKEN 2 Dictionary 
+3. Module 2 Incremental LineCov -> Fuzzer Constraint Weight Matrix(Constraint Weight, New Branch / JobBudget) (DONE)
+4. Add JobID JobBudget (DONE)
+5. CallTrace 2 Pfuzzer for seed distance calculation
+6. FuzzerFork.cpp

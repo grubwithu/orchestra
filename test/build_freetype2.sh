@@ -14,6 +14,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+JOBS=$(($(grep -c ^processor /proc/cpuinfo) < 16 ? $(grep -c ^processor /proc/cpuinfo) : 16))
 
 cd freetype2
 git checkout 94cb3a2eb96b3f17a1a3bd0e6f7da97c0e1d8f57
@@ -22,7 +23,7 @@ DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
-  ${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
+  clang++ $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
     -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
     ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
     ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a \
@@ -46,7 +47,7 @@ cmake -B build-runtime -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -DCMAK
   -DCMAKE_INSTALL_PREFIX=$(pwd)/build-runtime/install -DFT_DISABLE_BROTLI=TRUE \
   -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE
 pushd build-runtime
-make clean && make -j && make install
+make clean && make -j$JOBS && make install
 ${CC} -fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS -fsanitize=address,fuzzer -std=c++11 \
   -larchive -I./install/include/ -I../include/ ../src/tools/ftfuzzer/ftfuzzer.cc \
   -o ftfuzzer_cov ./install/lib/libfreetyped.a
@@ -66,7 +67,7 @@ cmake -B build__HFC_qzmp__ -DBUILD_SHARED_LIBS=false -DCMAKE_BUILD_TYPE=Debug -D
   -DCMAKE_INSTALL_PREFIX=$(pwd)/build__HFC_qzmp__/install -DFT_DISABLE_BROTLI=TRUE \
   -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE
 pushd build__HFC_qzmp__
-make clean && make -j && make install
+make clean && make -j$JOBS && make install
 
 ${CXX} -c $DEFAULT_FLAGS -fsanitize=fuzzer -std=c++11 -larchive \
   -I./install/include/ -I../include/ \

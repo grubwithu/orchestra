@@ -1,0 +1,236 @@
+=== Origin Code
+static void maybe_duplicate_stderr() {
+  char *stderr_duplicate_filename =
+      getenv("AFL_DRIVER_STDERR_DUPLICATE_FILENAME");
+
+  if (!stderr_duplicate_filename)
+    return;
+
+  FILE *stderr_duplicate_stream =
+      freopen(stderr_duplicate_filename, "a+", stderr);
+
+  if /*asdasd*/ (!stderr_duplicate_stream) {
+    fprintf(
+        stderr,
+        "Failed to duplicate stderr to AFL_DRIVER_STDERR_DUPLICATE_FILENAME");
+    if (asdzxc ) {
+      ddddff();
+    }
+    abort();
+  } else 
+    abort();
+  
+  output_file = stderr_duplicate_stream;
+}
+
+// Most of these I/O functions were inspired by/copied from libFuzzer's code.
+static void discard_output(int fd) {
+  FILE *temp = fopen("/dev/null", "w");
+  if (!temp)
+    abort();
+  dup2(fileno(temp), fd);
+  fclose(temp);
+}
+===
+
+translation_unit
+  function_definition
+    storage_class_specifier
+      static
+    primitive_type
+    function_declarator
+      identifier
+      parameter_list
+        (
+        )
+    compound_statement
+      {
+      declaration
+        primitive_type
+        init_declarator
+          pointer_declarator
+            *
+            identifier
+          =
+          call_expression
+            identifier
+            argument_list
+              (
+              string_literal
+                "
+                string_content
+                "
+              )
+        ;
+      if_statement
+        if
+        condition_clause
+          (
+          unary_expression
+            !
+            identifier
+          )
+        return_statement
+          return
+          ;
+      declaration
+        type_identifier
+        init_declarator
+          pointer_declarator
+            *
+            identifier
+          =
+          call_expression
+            identifier
+            argument_list
+              (
+              identifier
+              ,
+              string_literal
+                "
+                string_content
+                "
+              ,
+              identifier
+              )
+        ;
+      if_statement
+        if
+        comment
+        condition_clause
+          (
+          unary_expression
+            !
+            identifier
+          )
+        compound_statement
+          {
+          expression_statement
+            call_expression
+              identifier
+              argument_list
+                (
+                identifier
+                ,
+                string_literal
+                  "
+                  string_content
+                  "
+                )
+            ;
+          if_statement
+            if
+            condition_clause
+              (
+              identifier
+              )
+            compound_statement
+              {
+              expression_statement
+                call_expression
+                  identifier
+                  argument_list
+                    (
+                    )
+                ;
+              }
+          expression_statement
+            call_expression
+              identifier
+              argument_list
+                (
+                )
+            ;
+          }
+        else_clause
+          else
+          expression_statement
+            call_expression
+              identifier
+              argument_list
+                (
+                )
+            ;
+      expression_statement
+        assignment_expression
+          identifier
+          =
+          identifier
+        ;
+      }
+  comment
+  function_definition
+    storage_class_specifier
+      static
+    primitive_type
+    function_declarator
+      identifier
+      parameter_list
+        (
+        parameter_declaration
+          primitive_type
+          identifier
+        )
+    compound_statement
+      {
+      declaration
+        type_identifier
+        init_declarator
+          pointer_declarator
+            *
+            identifier
+          =
+          call_expression
+            identifier
+            argument_list
+              (
+              string_literal
+                "
+                string_content
+                "
+              ,
+              string_literal
+                "
+                string_content
+                "
+              )
+        ;
+      if_statement
+        if
+        condition_clause
+          (
+          unary_expression
+            !
+            identifier
+          )
+        expression_statement
+          call_expression
+            identifier
+            argument_list
+              (
+              )
+          ;
+      expression_statement
+        call_expression
+          identifier
+          argument_list
+            (
+            call_expression
+              identifier
+              argument_list
+                (
+                identifier
+                )
+            ,
+            identifier
+            )
+        ;
+      expression_statement
+        call_expression
+          identifier
+          argument_list
+            (
+            identifier
+            )
+        ;
+      }

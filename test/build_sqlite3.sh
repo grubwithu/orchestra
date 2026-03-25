@@ -14,6 +14,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+JOBS=$(($(grep -c ^processor /proc/cpuinfo) < 16 ? $(grep -c ^processor /proc/cpuinfo) : 16))
+
 cd sqlite3
 git checkout 4d9384cba35ce7971431da9b543e0f9d68975947
 
@@ -21,7 +23,7 @@ DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
-  ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
+  clang -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
     -lstdc++ \
     -I$(pwd)/install/include \
     ../test/ossfuzz.c \
@@ -38,7 +40,7 @@ export CC="clang"
 export CXX="clang++"
 export CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j && make install
+../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j$JOBS && make install
 ${CC} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FLAGS \
   -lstdc++ \
   -I$(pwd)/install/include \
@@ -62,7 +64,7 @@ export CC="gclang"
 export CXX="gclang++"
 export CXXFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
 export CFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
-../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j && make install
+../configure --shared=0 --prefix=$(pwd)/install --disable-tcl && make -j$JOBS && make install
 
 ${CC} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
   -lstdc++ \

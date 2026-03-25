@@ -14,6 +14,7 @@ func main() {
 	executablePath := flag.String("program", "", "Program executable path, format: -program=xx.out")
 	srcPathMatch := flag.String("srcpath", "build__HFC_qzmp__", "Replace the matched dir name in the source path, format: -srcpath=build__HFC_qzmp__")
 	fuzzIntroPrefix := flag.String("fuzzintro", "fuzzerLogFile-", "Prefix of the fuzz intro file, format: -fuzzintro=fuzzerLogFile-")
+	verbose := flag.Bool("verbose", false, "Enable verbose logging")
 	port := flag.Int("port", 8080, "Port number for the web server (default: 8080), format: -port=8080")
 	help := flag.Bool("h", false, "Display help information")
 
@@ -36,7 +37,7 @@ func main() {
 		log.Fatal("Error: llvm-cov is not installed\n")
 	}
 
-	webServer := webcore.NewServer(*port, *executablePath, *fuzzIntroPrefix, *srcPathMatch)
+	webServer := webcore.NewServer(*port, *executablePath, *fuzzIntroPrefix, *srcPathMatch, *verbose)
 	webServer.Start()
 
 	log.Println("We are done here. Have a nice day!")

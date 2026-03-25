@@ -1,5 +1,10 @@
 package analysis
 
+/**
+ * RunDynamic - get dynamic coverage data using "libfuzzer -merge=1",
+ *              llvm-profdata, and llvm-cov
+ **/
+
 import (
 	"bytes"
 	"encoding/json"
@@ -17,9 +22,20 @@ type FuncCov struct {
 	Count     int      `json:"count"`
 	FileNames []string `json:"filenames"`
 	// mcdc_records
-	Name string `json:"name"`
-	// regions
+	Name    string  `json:"name"`
+	Regions [][]int `json:"regions"`
 }
+
+const (
+	REGION_LINE_START = 0
+	REGION_COL_START  = 1
+	REGION_LINE_END   = 2
+	REGION_COL_END    = 3
+	REGION_EXEC_CNT   = 4
+	REGION_FILE_ID    = 5
+	REGION_EXP_ID     = 6
+	REGION_KND        = 7
+)
 
 type ProgCovData struct {
 	// Files
