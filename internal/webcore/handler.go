@@ -8,8 +8,8 @@ import (
 	"os/exec"
 
 	"github.com/gin-gonic/gin"
-	"github.com/grubwithu/hfc/internal/analysis"
-	"github.com/grubwithu/hfc/internal/plugin"
+	"github.com/grubwithu/orchestra/internal/analysis"
+	"github.com/grubwithu/orchestra/internal/plugin"
 )
 
 type APIResponse struct {

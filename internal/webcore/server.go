@@ -9,10 +9,10 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/grubwithu/hfc/internal/plugin"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/fuzzer"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/prerun"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/seed"
+	"github.com/grubwithu/orchestra/internal/plugin"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/fuzzer"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/seed"
 )
 
 const (

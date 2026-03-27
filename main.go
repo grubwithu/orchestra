@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/grubwithu/hfc/internal/webcore"
+	"github.com/grubwithu/orchestra/internal/webcore"
 )
 
 func main() {

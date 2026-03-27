@@ -6,10 +6,10 @@ import (
 	"log"
 	"sync"
 
-	"github.com/grubwithu/hfc/internal/analysis"
-	"github.com/grubwithu/hfc/internal/plugin"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/prerun"
-	"github.com/grubwithu/hfc/internal/plugin/plugins/seed"
+	"github.com/grubwithu/orchestra/internal/analysis"
+	"github.com/grubwithu/orchestra/internal/plugin"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/seed"
 )
 
 // Plugin handles constraint data processing

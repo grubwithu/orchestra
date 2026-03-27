@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/grubwithu/hfc/internal/analysis"
-	"github.com/grubwithu/hfc/internal/plugin"
+	"github.com/grubwithu/orchestra/internal/analysis"
+	"github.com/grubwithu/orchestra/internal/plugin"
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/smacker/go-tree-sitter/cpp"
 )

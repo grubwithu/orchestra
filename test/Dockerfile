@@ -2,7 +2,7 @@
 FROM hfc-base:latest
 
 RUN apt-get update && apt-get install -y \
-    libtool file zlib1g-dev libarchive-dev && \
+    libtool file zlib1g-dev libarchive-dev vim && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/hfc/

@@ -3,7 +3,7 @@ package analysis
 import (
 	"testing"
 
-	"github.com/grubwithu/hfc/internal/utils/cdf"
+	"github.com/grubwithu/orchestra/internal/utils/cdf"
 )
 
 // TestGetConstraintGroups tests the GetConstraintGroups function
