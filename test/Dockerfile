@@ -8,14 +8,18 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /root/hfc/
 
 RUN git submodule update --init --recursive && cd test/ && \
+    bash build_bloaty.sh && \
     bash build_freetype2.sh && \
-    bash build_sqlite3.sh && \
+    bash build_harfbuzz.sh && \
+    bash build_libjpeg.sh && \
     bash build_libpng.sh && \
-    bash build_harfbuzz.sh
+    bash build_libxml2.sh && \
+    bash build_proj4.sh && \
+    bash build_sqlite3.sh
 
 
 WORKDIR /opt
-RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/targets.tgz && \
+RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/targets.tgz && \
     tar -xzf targets.tgz && rm targets.tgz && \
     cd targets/ && bash hfc.sh && cd .. && \
     cd fuzzers/ && bash hfc.sh

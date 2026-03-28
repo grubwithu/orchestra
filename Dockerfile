@@ -49,7 +49,7 @@ RUN go install github.com/SRI-CSL/gllvm/cmd/...@latest
 
 WORKDIR /opt
 
-RUN wget https://github.com/grubwithu/hfc-introspector/releases/download/Alpha/fuzzers.tgz && \
+RUN https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/fuzzers.tgz && \
     tar -xzf fuzzers.tgz && rm fuzzers.tgz && cd fuzzers && bash build.sh
 
 ADD "https://api.github.com/repos/grubwithu/hfc-introspector/commits?per_page=1" /dev/null
@@ -63,5 +63,6 @@ WORKDIR /root
 ADD "https://api.github.com/repos/grubwithu/hfc/commits?per_page=1" /dev/null
 
 RUN git clone https://github.com/grubwithu/orchestra.git && \
-    cd orchestra && git submodule update --init --recursive pfuzzer && make && \
-    cd pfuzzer && bash build.sh
+    ln -s /root/orchestra /root/hfc && cd orchestra && \
+    git submodule update --init --recursive pfuzzer && \
+    make && cd pfuzzer && bash build.sh
