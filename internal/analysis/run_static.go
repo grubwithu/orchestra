@@ -246,14 +246,89 @@ func ParseCallTreeFromData(filePath string, programProfile *ProgramProfile) (*Ca
 		maxCyclomaticComplexity = max(maxCyclomaticComplexity, node.FunctionProfile.CyclomaticComplexity)
 	}
 
-	return &CallTree{
+	ct := &CallTree{
 		Root:                    rootNode,
 		Nodes:                   nodes,
 		MaxDepth:                maxDepth,
 		ProgramProfile:          programProfile,
 		MaxCyclomaticComplexity: maxCyclomaticComplexity,
-	}, nil
+	}
 
+	return mergeTree(ct), nil
+
+}
+
+func mergeTree(tree *CallTree) *CallTree {
+	if tree == nil || tree.Root == nil {
+		return tree
+	}
+
+	var mergeNodes func([]*CallTreeNode) []*CallTreeNode
+	mergeNodes = func(nodes []*CallTreeNode) []*CallTreeNode {
+		if len(nodes) == 0 {
+			return nil
+		}
+
+		grouped := make(map[string][]*CallTreeNode)
+		for _, node := range nodes {
+			if node.FunctionProfile != nil {
+				funcName := node.FunctionProfile.FunctionName
+				grouped[funcName] = append(grouped[funcName], node)
+			}
+		}
+
+		var mergedResult []*CallTreeNode
+		for _, groupNodes := range grouped {
+			newNode := &CallTreeNode{
+				FunctionProfile: groupNodes[0].FunctionProfile,
+				Children:        []*CallTreeNode{},
+				Parent:          nil,
+			}
+
+			var allChildren []*CallTreeNode
+			for _, node := range groupNodes {
+				allChildren = append(allChildren, node.Children...)
+			}
+
+			newNode.Children = mergeNodes(allChildren)
+
+			for _, child := range newNode.Children {
+				child.Parent = newNode
+			}
+
+			mergedResult = append(mergedResult, newNode)
+		}
+
+		return mergedResult
+	}
+
+	newRoot := &CallTreeNode{
+		FunctionProfile: tree.Root.FunctionProfile,
+		Children:        mergeNodes(tree.Root.Children),
+		Parent:          nil,
+	}
+
+	for _, child := range newRoot.Children {
+		child.Parent = newRoot
+	}
+
+	var newNodes []*CallTreeNode
+	var collectNodes func(*CallTreeNode)
+	collectNodes = func(node *CallTreeNode) {
+		newNodes = append(newNodes, node)
+		for _, child := range node.Children {
+			collectNodes(child)
+		}
+	}
+	collectNodes(newRoot)
+
+	return &CallTree{
+		Root:                    newRoot,
+		Nodes:                   newNodes,
+		MaxDepth:                tree.MaxDepth,
+		ProgramProfile:          tree.ProgramProfile,
+		MaxCyclomaticComplexity: tree.MaxCyclomaticComplexity,
+	}
 }
 
 func GetProgramAST(executablePath string) (map[string]*sitter.Tree, error) {

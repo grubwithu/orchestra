@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/grubwithu/orchestra/internal/analysis"
 	"github.com/grubwithu/orchestra/internal/plugin"
@@ -25,6 +26,7 @@ type PrerunData struct {
 	ProgCov    analysis.ProgCovData
 	LineCov    []analysis.FileLineCov
 	AST        map[string]*sitter.Tree
+	ASTMutex   sync.Mutex
 	SourceCode map[string][]byte
 }
 
@@ -169,8 +171,8 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 }
 
 // GetInitData returns the initialization data for other plugins
-func (p *Plugin) GetInitData() PrerunData {
-	return p.initData
+func (p *Plugin) GetInitData() *PrerunData {
+	return &p.initData
 }
 
 // Process processes the corpus and generates coverage data
@@ -211,7 +213,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 
 	// Store results in PluginData
-	prerunResult := p.initData
+	prerunResult := &p.initData
 	prerunResult.Cov = cov
 	prerunResult.ProgCov = progCovData
 	prerunResult.LineCov = lineCov

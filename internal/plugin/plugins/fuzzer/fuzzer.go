@@ -42,7 +42,7 @@ func (p *Plugin) Name() string {
 // Require checks if the plugin should process the given data
 // Constraint plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
-	_, ok := data.Data["prerun"].(prerun.PrerunData)
+	_, ok := data.Data["prerun"].(*prerun.PrerunData)
 	return ok
 }
 
@@ -59,7 +59,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	defer p.mutex.Unlock()
 
 	// Get prerun results
-	prerunData, ok := data.Data["prerun"].(prerun.PrerunData)
+	prerunData, ok := data.Data["prerun"].(*prerun.PrerunData)
 	if !ok {
 		return fmt.Errorf("prerun data not found for fuzzer: %s", data.Fuzzer)
 	}
@@ -117,7 +117,9 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		}
 
 		// Calculate score
+		prerunData.ASTMutex.Lock()
 		score := analysis.CalculateFuzzerScore(data.Fuzzer, prerunData.LineCov, prevFileLineCovs, ast, sourceCode, importantFunctions)
+		prerunData.ASTMutex.Unlock()
 
 		// Update fuzzer score
 		if existingScore, exists := p.fuzzerScores[data.Fuzzer]; exists {

@@ -13,3 +13,15 @@
 [submodule "test/harfbuzz"]
 	path = test/harfbuzz
 	url = https://github.com/harfbuzz/harfbuzz.git
+[submodule "test/bloaty"]
+	path = test/bloaty
+	url = https://github.com/google/bloaty.git
+[submodule "test/libjpeg-turbo"]
+	path = test/libjpeg-turbo
+	url = https://github.com/libjpeg-turbo/libjpeg-turbo
+[submodule "test/libxml2"]
+	path = test/libxml2
+	url = https://gitlab.gnome.org/GNOME/libxml2.git
+[submodule "test/proj4"]
+	path = test/proj4
+	url = https://github.com/OSGeo/PROJ

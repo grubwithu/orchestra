@@ -11,7 +11,7 @@ package seed
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"sync"
@@ -47,7 +47,7 @@ func (p *Plugin) Name() string {
 // Require checks if the plugin should process the given data
 // Seed plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
-	_, ok := data.Data["prerun"].(prerun.PrerunData)
+	_, ok := data.Data["prerun"].(*prerun.PrerunData)
 	return ok && data.Period != "begin"
 }
 
@@ -64,9 +64,9 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	defer p.mutex.Unlock()
 
 	// Get prerun results
-	prerunData, ok := data.Data["prerun"].(prerun.PrerunData)
+	prerunData, ok := data.Data["prerun"].(*prerun.PrerunData)
 	if !ok {
-		return errors.New("prerun data not found")
+		return fmt.Errorf("prerun data not found for fuzzer: %s", data.Fuzzer)
 	}
 
 	// Update global coverage
@@ -95,6 +95,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 
 	// Get AST and SourceCode from prerun result
+	prerunData.ASTMutex.Lock()
 	ast := prerunData.AST
 	sourceCode := prerunData.SourceCode
 	callTree := prerunData.CallTree
@@ -113,6 +114,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		// Update constraint groups
 		p.constraintGroups = groups
 	}
+	prerunData.ASTMutex.Unlock()
 
 	coverageResult := CoverageData{
 		GlobalCov:        p.globalCov,

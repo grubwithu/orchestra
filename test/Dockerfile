@@ -2,12 +2,12 @@
 FROM hfc-base:latest
 
 RUN apt-get update && apt-get install -y \
-    libtool file zlib1g-dev libarchive-dev vim && \
+    libtool file zlib1g-dev libarchive-dev vim sqlite3 libsqlite3-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/hfc/
 
-RUN cd test/ && \
+RUN git submodule update --init --recursive && cd test/ && \
     bash build_freetype2.sh && \
     bash build_sqlite3.sh && \
     bash build_libpng.sh && \
