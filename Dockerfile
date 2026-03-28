@@ -62,7 +62,7 @@ WORKDIR /root
 
 ADD "https://api.github.com/repos/grubwithu/hfc/commits?per_page=1" /dev/null
 
-RUN git clone -depth 1 https://github.com/grubwithu/orchestra.git && \
+RUN git clone --depth 1 https://github.com/grubwithu/orchestra.git && \
     ln -s /root/orchestra /root/hfc && cd orchestra && \
     git submodule update --init --recursive pfuzzer && \
     make && cd pfuzzer && bash build.sh
