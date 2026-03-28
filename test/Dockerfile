@@ -24,4 +24,8 @@ RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/targets
     cd targets/ && bash hfc.sh && cd .. && \
     cd fuzzers/ && bash hfc.sh
 
+RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/seeds.tgz && \
+    tar -xzf seeds.tgz && rm seeds.tgz && \
+    mv seeds/* /root/hfc/test/
+
 WORKDIR /root/hfc/
