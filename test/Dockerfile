@@ -16,7 +16,8 @@ RUN git submodule update --init --recursive && cd test/ && \
     bash build_libpng.sh && \
     bash build_libxml2.sh && \
     bash build_proj4.sh && \
-    bash build_sqlite3.sh
+    bash build_sqlite3.sh && \
+    bash clean_up.sh
 
 
 WORKDIR /opt
