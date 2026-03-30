@@ -32,7 +32,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   
   ${CXX} $CXXFLAGS \
     -I$(pwd)/install/include \
-    ../fuzzers/proj_crs_to_crs_fuzzer.cpp \
+    ../test/fuzzers/proj_crs_to_crs_fuzzer.cpp \
     -o proj_crs_to_crs_fuzzer \
     $(pwd)/install/lib/libproj.a \
     -lsqlite3 -lpthread \
