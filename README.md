@@ -61,3 +61,7 @@ $ docker build -t hfc-test:latest .
 4. Add JobID JobBudget (DONE)
 5. CallTrace 2 Pfuzzer for seed distance calculation
 6. FuzzerFork.cpp
+
+# TODO 26.3.30
+1. Fuzzer parameters
+2. Dict

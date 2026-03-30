@@ -2,7 +2,8 @@
 FROM hfc-base:latest
 
 RUN apt-get update && apt-get install -y \
-    libtool file zlib1g-dev libarchive-dev vim sqlite3 libsqlite3-dev && \
+    libtool file zlib1g-dev libarchive-dev vim \
+    sqlite3 libsqlite3-dev pkg-config && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/hfc/
