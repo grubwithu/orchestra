@@ -43,6 +43,8 @@ export CXXFLAGS="-O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
+  export CC="clang"
+  export CXX="clang++"
   export LIB_FUZZING_ENGINE="${PFUZZER_LIB}"
   export BLOATY_FUZZ_CFLAGS="-fsanitize=fuzzer-no-link -fsanitize-coverage=trace-cmp"
   export BLOATY_FUZZ_LDFLAGS="-fsanitize-coverage=trace-cmp"

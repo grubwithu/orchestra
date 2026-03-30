@@ -25,9 +25,8 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   cd build-runtime
   clang++ $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
     -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
-    ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
-    ./install/lib/libfreetyped.a  ../libarchive-3.4.3/building/install/lib/libarchive.a \
-    ../../../pfuzzer/build/libfuzzer.a
+    -larchive ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
+    ./install/lib/libfreetyped.a ../../../pfuzzer/build/libfuzzer.a
   exit 0
 fi
 
