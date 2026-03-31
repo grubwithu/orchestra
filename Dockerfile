@@ -13,22 +13,20 @@ RUN apt-get update && apt-get install -y \
 
 RUN wget https://apt.llvm.org/llvm.sh && \
     chmod +x llvm.sh && \
-    ./llvm.sh 21 && \
+    ./llvm.sh 18 && \
     apt-get update && apt-get install -y \
-    clang-21 \
-    llvm-21 \
-    lld-21 \
+    clang-18 llvm-18 lld-18 \
     && rm llvm.sh \
     && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-21 100 && \
-    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-21 100 && \
-    update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 100 && \
-    update-alternatives --install /usr/bin/lld lld /usr/bin/lld-21 100 && \
-    update-alternatives --install /usr/bin/opt opt /usr/bin/opt-21 100 && \
-    update-alternatives --install /usr/bin/llvm-link llvm-link /usr/bin/llvm-link-21 100 && \
-    update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-21 100 && \
-    update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-21 100
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100 && \
+    update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-18 100 && \
+    update-alternatives --install /usr/bin/lld lld /usr/bin/lld-18 100 && \
+    update-alternatives --install /usr/bin/opt opt /usr/bin/opt-18 100 && \
+    update-alternatives --install /usr/bin/llvm-link llvm-link /usr/bin/llvm-link-18 100 && \
+    update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100 && \
+    update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
 
 ENV GO_VERSION=1.26.1
 RUN ARCH="$(dpkg --print-architecture)" && \
@@ -55,7 +53,7 @@ RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/fuzzers
 ADD "https://api.github.com/repos/grubwithu/hfc-introspector/commits?per_page=1" /dev/null
 RUN git clone https://github.com/grubwithu/hfc-introspector.git && \
     cd hfc-introspector && mkdir build && cd build && \
-    CC=clang-21 CXX=clang++-21 cmake .. && make
+    CC=clang CXX=clang++ cmake .. && make
 ENV FUZZ_INTRO="/opt/hfc-introspector/build/FuzzIntrospector.so" 
 
 WORKDIR /root

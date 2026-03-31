@@ -6,7 +6,7 @@ This is a module that runs with [pfuzzer](https://github.com/grubwithu/pfuzzer).
 > Docker is recommended to run HFC.
 
 Pre-requisite:
-- Clang-21, LLVM-21, CMake, Build-essential, and so on...
+- Clang-18, LLVM-18, CMake, Build-essential, and so on...
 - `llvm-profdata`, `llvm-opt`, and `llvm-cov` are needed in PATH.
 - There is a environment variable `FUZZ_INTRO` to specify the path of `FuzzIntrospector.so`.
 
