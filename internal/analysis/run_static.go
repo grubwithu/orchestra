@@ -419,12 +419,14 @@ func ParseDebugInfoFromFile(filePath string) (*DebugInfo, error) {
 
 		if strings.HasPrefix(line, "## Global variables in module") {
 			section = "globals"
-			continue
+			// continue
+			break // we dont need those data currently, so break to save time
 		}
 
 		if strings.HasPrefix(line, "## Types defined in module") {
 			section = "types"
-			continue
+			// continue
+			break
 		}
 
 		// Process based on section
