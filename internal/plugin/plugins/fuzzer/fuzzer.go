@@ -16,7 +16,8 @@ import (
 type Plugin struct {
 	config           plugin.PluginConfig
 	Job2Fuzzer       map[int]string                      // JobID -> Fuzzer Name
-	JobBeginCov      map[int][]analysis.FileLineCov      // JobID -> Seeds Coverage
+	JobBeginCov      map[int]int                         // JobID -> Seeds Coverage
+	JobBeginLineCov  map[int][]analysis.FileLineCov      // JobID -> Seeds Coverage
 	fuzzerScores     map[string]analysis.ConstraintScore // Fuzzer Name -> Constraint Score
 	fuzzerEfficiency map[string]float64                  // Fuzzer Name -> Efficiency
 	fuzzerCovSeq     map[string][]int                    // Fuzzer Name -> Coverage Sequence
@@ -27,7 +28,8 @@ type Plugin struct {
 func NewPlugin() *Plugin {
 	return &Plugin{
 		Job2Fuzzer:       make(map[int]string),
-		JobBeginCov:      make(map[int][]analysis.FileLineCov),
+		JobBeginCov:      make(map[int]int),
+		JobBeginLineCov:  make(map[int][]analysis.FileLineCov),
 		fuzzerScores:     make(map[string]analysis.ConstraintScore),
 		fuzzerEfficiency: make(map[string]float64),
 		fuzzerCovSeq:     make(map[string][]int),
@@ -78,7 +80,8 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 
 	// Handle begin period
 	if data.Period == "begin" {
-		p.JobBeginCov[data.JobID] = prerunData.LineCov
+		p.JobBeginLineCov[data.JobID] = prerunData.LineCov
+		p.JobBeginCov[data.JobID] = prerunData.Cov
 		p.Job2Fuzzer[data.JobID] = data.Fuzzer
 		p.Log(ctx, "Saved baseline coverage for fuzzer: %s\n", data.Fuzzer)
 		return nil
@@ -98,16 +101,24 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	if ast != nil && sourceCode != nil {
 		// Get previous file line coverage
 		var prevFileLineCovs []analysis.FileLineCov
-		if fileLineCovs, ok := p.JobBeginCov[data.JobID]; ok {
+
+		if fileLineCovs, ok := p.JobBeginLineCov[data.JobID]; ok {
 			prevFileLineCovs = fileLineCovs
+			delete(p.JobBeginLineCov, data.JobID)
+		} else {
+			return fmt.Errorf("The coverage information of input seeds not found for fuzzer: %s", data.Fuzzer)
+		}
+
+		var prevCov int
+		if cov, ok := p.JobBeginCov[data.JobID]; ok {
+			prevCov = cov
 			delete(p.JobBeginCov, data.JobID)
 		} else {
 			return fmt.Errorf("The coverage information of input seeds not found for fuzzer: %s", data.Fuzzer)
 		}
 
 		// Calculate efficiency
-		seedCov := p.fuzzerCovSeq[data.Fuzzer][len(p.fuzzerCovSeq[data.Fuzzer])-2]
-		efficiency := float64(seedCov-prerunData.Cov) / float64(data.Budge)
+		efficiency := float64(prerunData.Cov-prevCov) / float64(data.Budge)
 		p.fuzzerEfficiency[data.Fuzzer] = max(0.0, efficiency)
 
 		// Get important functions
@@ -136,7 +147,14 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 			}
 		}
 		// Normalize the efficiency coefficient to 0.5-1.5 range
-		k := 0.5 + (efficiency/maxEfficiency)*1.0
+
+		var k float64
+
+		if maxEfficiency > 0 {
+			k = 0.5 + (efficiency/maxEfficiency)*1.0
+		} else {
+			k = 1.0
+		}
 
 		for i := range score {
 			score[i] *= k
@@ -170,7 +188,8 @@ func (p *Plugin) Cleanup(ctx context.Context) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.Job2Fuzzer = make(map[int]string)
-	p.JobBeginCov = make(map[int][]analysis.FileLineCov)
+	p.JobBeginCov = make(map[int]int)
+	p.JobBeginLineCov = make(map[int][]analysis.FileLineCov)
 	p.fuzzerScores = make(map[string]analysis.ConstraintScore)
 	p.fuzzerEfficiency = make(map[string]float64)
 	p.fuzzerCovSeq = make(map[string][]int)

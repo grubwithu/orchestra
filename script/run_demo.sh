@@ -77,5 +77,5 @@ echo core > /proc/sys/kernel/core_pattern
 ## 5. Run pfuzzer
 if [ $HFC_ONLY -eq 0 ]; then
   mkdir -p tmp_xx223
-  timeout -s INT 24h test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ -rss_limit_mb=0 -fork=4 -fuzzers=afl,afl-rb,aflfast,redqueen,entropic $PASS_ARGS
+  timeout -s INT 24h test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ -rss_limit_mb=0 -fork=4 -fuzzers=afl,fairfuzz,aflfast,redqueen,entropic $PASS_ARGS
 fi
