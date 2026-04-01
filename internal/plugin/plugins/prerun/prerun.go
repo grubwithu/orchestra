@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/grubwithu/orchestra/internal/analysis"
 	"github.com/grubwithu/orchestra/internal/plugin"
@@ -68,25 +69,35 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 
 	prefix := strings.TrimSpace(config.FuzzIntroPrefix)
 	profilePath := prefix + ".yaml"
+
+	// Parse YAML with timing
+	start := time.Now()
 	staticData, err := analysis.ParseProfileFromYAML(profilePath, config.SrcPathMatch)
 	if err != nil {
 		p.Log(ctx, "Error parsing YAML: %v\n", err)
 		return err
 	}
+	p.Log(ctx, "ParseProfileFromYAML took %v\n", time.Since(start))
 
+	// Parse call tree with timing
 	callTreePath := prefix
+	start = time.Now()
 	callTree, err := analysis.ParseCallTreeFromData(callTreePath, staticData)
 	if err != nil {
 		p.Log(ctx, "Error parsing call tree data: %v\n", err)
 		return err
 	}
+	p.Log(ctx, "ParseCallTreeFromData took %v\n", time.Since(start))
 
+	// Parse debug info with timing
 	debugInfoPath := prefix + ".debug_info"
+	start = time.Now()
 	debugInfo, err := analysis.ParseDebugInfoFromFile(debugInfoPath)
 	if err != nil {
 		p.Log(ctx, "Error parsing debug info: %v\n", err)
 		return err
 	}
+	p.Log(ctx, "ParseDebugInfoFromFile took %v\n", time.Since(start))
 
 	// 1. Create a temp directory for initial corpus
 	corpusDir, err := os.MkdirTemp("", "hfc_corpus_")
@@ -112,25 +123,31 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	defer os.RemoveAll(workDir)
 
 	// 4. Run analysis to generate profdata
+	start = time.Now()
 	cov, profdataPath, err := analysis.RunOnceForProfdata(workDir, executable, corpusDir)
 	if err != nil {
 		p.Log(ctx, "Error running RunOnceForProfdata: %v\n", err)
 		return err
 	}
+	p.Log(ctx, "RunOnceForProfdata took %v\n", time.Since(start))
 
 	// 5. Get program coverage data
+	start = time.Now()
 	progCovData, err := analysis.GetProgCov(workDir, executable, profdataPath)
 	if err != nil {
 		p.Log(ctx, "Error getting program coverage data: %v\n", err)
 		return err
 	}
+	p.Log(ctx, "GetProgCov took %v\n", time.Since(start))
 
 	// 6. Get line coverage data
+	start = time.Now()
 	fileLineCovs, err := analysis.GetLineCov(workDir, executable, profdataPath)
 	if err != nil {
 		p.Log(ctx, "Error getting line coverage data: %v\n", err)
 		return err
 	}
+	p.Log(ctx, "GetLineCov took %v\n", time.Since(start))
 
 	// Reset coverage for fresh start
 	for i := range fileLineCovs {
@@ -138,6 +155,7 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	}
 
 	// 7. Parse the code in files
+	start = time.Now()
 	ast := map[string]*sitter.Tree{}
 	sourceCode := map[string][]byte{}
 	parser := sitter.NewParser()
@@ -149,6 +167,7 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 		tree, _ := parser.ParseCtx(context.Background(), nil, code)
 		ast[file.File] = tree
 	}
+	p.Log(ctx, "Parse code files took %v\n", time.Since(start))
 
 	// Store initialization data
 	p.initData = PrerunData{
