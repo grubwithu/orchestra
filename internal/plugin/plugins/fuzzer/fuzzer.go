@@ -118,7 +118,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		}
 
 		// Calculate efficiency
-		efficiency := float64(prerunData.Cov-prevCov) / float64(data.Budge)
+		efficiency := float64(prerunData.Cov-prevCov) / float64(data.Budget)
 		p.fuzzerEfficiency[data.Fuzzer] = max(0.0, efficiency)
 
 		// Get important functions
@@ -139,9 +139,13 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		// Normalize the score
 		score = analysis.NormalizeScore(score)
 
-		// find the max efficiency
+		// find the min and max efficiency
+		minEfficiency := 100.0
 		maxEfficiency := 0.0
 		for _, efficiency := range p.fuzzerEfficiency {
+			if efficiency < minEfficiency {
+				minEfficiency = efficiency
+			}
 			if efficiency > maxEfficiency {
 				maxEfficiency = efficiency
 			}
@@ -150,8 +154,9 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 
 		var k float64
 
-		if maxEfficiency > 0 {
-			k = 0.5 + (efficiency/maxEfficiency)*1.0
+		if maxEfficiency-minEfficiency > 0 {
+			// (min, max) -> (0.5, 1.5)
+			k = 0.5 + (efficiency-minEfficiency)/(maxEfficiency-minEfficiency)*1.0
 		} else {
 			k = 1.0
 		}
@@ -162,7 +167,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		p.fuzzerScores[data.Fuzzer] = score
 
 		if p.config.Verbose {
-			p.Log(ctx, "Process: fuzzer=%s, job=%d, efficiency=%f, score=%v\n", data.Fuzzer, data.JobID, efficiency, score)
+			p.Log(ctx, "Process: fuzzer=%s, job=%d, efficiency=%f, k(scale)=%f, score=%v\n", data.Fuzzer, data.JobID, efficiency, k, score)
 		} else {
 			p.Log(ctx, "Processed data for fuzzer=%s\n", data.Fuzzer)
 		}

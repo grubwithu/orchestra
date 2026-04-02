@@ -70,9 +70,10 @@ elif [ $HFC_ONLY -eq 1 ]; then
   build/hfc -verbose -fuzzintro=$DATA_FILE_ABS -program=$PROG_FILE 1>build/$PROGNAME.log 2>&1
 fi
 
+$AFL_SYSTEM_CONFIG || true
 export AFL_SKIP_CPUFREQ=1
+export AFL_NO_AFFINITY=1
 export HFC_URL=http://localhost:8080
-echo core > /proc/sys/kernel/core_pattern
 
 ## 5. Run pfuzzer
 if [ $HFC_ONLY -eq 0 ]; then

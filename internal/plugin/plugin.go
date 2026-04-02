@@ -16,7 +16,7 @@ type PluginData struct {
 	Fuzzer string
 	Corpus string
 	Period string
-	Budge  int
+	Budget int
 	JobID  int
 
 	// Pass data among plugins, temporary storage

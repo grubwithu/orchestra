@@ -35,7 +35,7 @@ func (s *Server) processCorpus(reqBody CorpusReportReqBody) {
 		Corpus: reqBody.Corpus[0],
 		Period: reqBody.Period,
 		JobID:  reqBody.JobId,
-		Budge:  reqBody.JobBudget,
+		Budget: reqBody.JobBudget,
 	}
 
 	// Process through plugin pipeline
