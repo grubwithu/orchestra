@@ -50,6 +50,8 @@ WORKDIR /opt
 RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/fuzzers.tgz && \
     tar -zxf fuzzers.tgz && rm fuzzers.tgz && cd fuzzers && bash build.sh
 
+ENV AFL_SYSTEM_CONFIG="/opt/fuzzers/AFLplusplus/afl-system-config"
+
 ADD "https://api.github.com/repos/grubwithu/hfc-introspector/commits?per_page=1" /dev/null
 RUN git clone https://github.com/grubwithu/hfc-introspector.git && \
     cd hfc-introspector && mkdir build && cd build && \
