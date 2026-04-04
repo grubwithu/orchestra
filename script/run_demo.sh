@@ -78,5 +78,8 @@ export HFC_URL=http://localhost:8080
 ## 5. Run pfuzzer
 if [ $HFC_ONLY -eq 0 ]; then
   mkdir -p tmp_xx223
-  timeout -s INT 24h test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ -rss_limit_mb=0 -fork=4 -fuzzers=afl,fairfuzz,aflfast,redqueen,entropic $PASS_ARGS
+
+  timeout -s INT 24h test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ \
+  -rss_limit_mb=0 -max_len=1048575 \
+  -fork=4 -fuzzers=afl,fairfuzz,aflfast,redqueen,entropic $PASS_ARGS
 fi
