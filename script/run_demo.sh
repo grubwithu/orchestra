@@ -80,6 +80,6 @@ if [ $HFC_ONLY -eq 0 ]; then
   mkdir -p tmp_xx223
 
   timeout -s INT 24h test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ \
-  -rss_limit_mb=0 -max_len=1048575 \
+  -rss_limit_mb=0 -max_len=1048575 -ignore_crashes=1 \
   -fork=4 -fuzzers=afl,fairfuzz,aflfast,redqueen,entropic $PASS_ARGS
 fi
