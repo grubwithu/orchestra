@@ -54,7 +54,10 @@ func TestGetConstraintGroups(t *testing.T) {
 	}
 
 	// Test the function
-	groups := GetConstraintGroups(callTree, progCovData, nil, nil, nil)
+	groups := GetConstraintGroups(InputGetConstraintGroups{
+		CallTree:    callTree,
+		ProgCovData: progCovData,
+	})
 
 	// Check that we got the expected number of groups (should equal number of leaf nodes)
 	if len(groups) != 2 {

@@ -129,7 +129,14 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 
 		// Calculate score
 		prerunData.ASTMutex.Lock()
-		score := analysis.CalculateFuzzerScore(data.Fuzzer, prerunData.LineCov, prevFileLineCovs, ast, sourceCode, importantFunctions)
+		score := analysis.CalculateFuzzerScore(analysis.InputCalculateFuzzerScore{
+			FuzzerName:         data.Fuzzer,
+			CurFileLineCovs:    prerunData.LineCov,
+			PrevFileLineCovs:   prevFileLineCovs,
+			AST:                ast,
+			SourceCode:         sourceCode,
+			ImportantFunctions: importantFunctions,
+		})
 		prerunData.ASTMutex.Unlock()
 
 		// Update fuzzer score

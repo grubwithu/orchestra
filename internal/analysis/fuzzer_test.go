@@ -190,7 +190,9 @@ void testFunction(int x, int y, const char* s) {
 // TestCalculateFuzzerScoreEdgeCases tests edge cases for CalculateFuzzerScore
 func TestCalculateFuzzerScoreEdgeCases(t *testing.T) {
 	// Test with empty inputs
-	score := CalculateFuzzerScore("test", []FileLineCov{}, []FileLineCov{}, nil, nil, nil)
+	score := CalculateFuzzerScore(InputCalculateFuzzerScore{
+		FuzzerName: "test",
+	})
 	// Check that all scores are 0
 	expectedScore := ConstraintScore{
 		CT_VALUE_COMPARISON:     0,
@@ -206,7 +208,11 @@ func TestCalculateFuzzerScoreEdgeCases(t *testing.T) {
 	}
 
 	// Test with nil AST
-	score = CalculateFuzzerScore("test", []FileLineCov{{File: "test.cc"}}, []FileLineCov{{File: "test.cc"}}, nil, nil, nil)
+	score = CalculateFuzzerScore(InputCalculateFuzzerScore{
+		FuzzerName:      "test",
+		CurFileLineCovs: []FileLineCov{{File: "test.cc"}},
+		PrevFileLineCovs: []FileLineCov{{File: "test.cc"}},
+	})
 	// Check that all scores are 0
 	for key, value := range expectedScore {
 		if score[key] != value {

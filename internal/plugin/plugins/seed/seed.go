@@ -103,13 +103,13 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	// Calculate constraint groups if we have all necessary data
 	if ast != nil && sourceCode != nil {
 		// Generate constraint groups based on call tree leaf nodes
-		groups := analysis.GetConstraintGroups(
-			&callTree,
-			&prerunData.ProgCov,
-			ast,
-			sourceCode,
-			callTree.ProgramProfile.AllFunctions.Elements,
-		)
+		groups := analysis.GetConstraintGroups(analysis.InputGetConstraintGroups{
+			CallTree:         &callTree,
+			ProgCovData:      &prerunData.ProgCov,
+			AST:              ast,
+			SourceCode:       sourceCode,
+			FunctionProfiles: callTree.ProgramProfile.AllFunctions.Elements,
+		})
 
 		// Update constraint groups
 		p.constraintGroups = groups

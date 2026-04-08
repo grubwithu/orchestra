@@ -283,14 +283,16 @@ func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 	return CT_COMPOUND_OPERATION
 }
 
-func CalculateFuzzerScore(
-	fuzzerName string,
-	curFileLineCovs []FileLineCov,
-	prevFileLineCovs []FileLineCov,
-	ast map[string]*sitter.Tree,
-	sourceCode map[string][]byte,
-	importantFunctions []string,
-) ConstraintScore {
+type InputCalculateFuzzerScore struct {
+	FuzzerName         string
+	CurFileLineCovs    []FileLineCov
+	PrevFileLineCovs   []FileLineCov
+	AST                map[string]*sitter.Tree
+	SourceCode         map[string][]byte
+	ImportantFunctions []string
+}
+
+func CalculateFuzzerScore(input InputCalculateFuzzerScore) ConstraintScore {
 	score := ConstraintScore{
 		CT_VALUE_COMPARISON:     0,
 		CT_BITWISE_OPERATION:    0,
@@ -302,15 +304,15 @@ func CalculateFuzzerScore(
 	AllIncreaseCount := 0
 	ImportantIncreaseCount := 0
 
-	for i := range curFileLineCovs {
-		curFileLineCov := &curFileLineCovs[i]
+	for i := range input.CurFileLineCovs {
+		curFileLineCov := &input.CurFileLineCovs[i]
 		fileName := curFileLineCov.File
 
-		prevFileLineCov := &prevFileLineCovs[i]
+		prevFileLineCov := &input.PrevFileLineCovs[i]
 		if prevFileLineCov.File != fileName {
-			for i := range prevFileLineCovs {
-				if prevFileLineCovs[i].File == fileName {
-					prevFileLineCov = &prevFileLineCovs[i]
+			for i := range input.PrevFileLineCovs {
+				if input.PrevFileLineCovs[i].File == fileName {
+					prevFileLineCov = &input.PrevFileLineCovs[i]
 					break
 				}
 			}
@@ -318,7 +320,7 @@ func CalculateFuzzerScore(
 
 		// log.Println(fileName)
 
-		tree, hasAST := ast[fileName]
+		tree, hasAST := input.AST[fileName]
 		if !hasAST {
 			continue
 		}
@@ -365,7 +367,7 @@ func CalculateFuzzerScore(
 					if body != nil && body.StartPoint().Row+1 <= lineNum && lineNum <= body.EndPoint().Row+1 {
 						condition := findIfCondition(ifNode)
 						if condition != nil {
-							constraintType := analyzeIfClause(condition, sourceCode[fileName])
+							constraintType := analyzeIfClause(condition, input.SourceCode[fileName])
 							score[constraintType] += 1.0
 						}
 					}
@@ -374,10 +376,10 @@ func CalculateFuzzerScore(
 					// log.Println("jump to ", index)
 				}
 
-				functionName := getFunctionName(findFunctionAtLine(tree, lineNum), sourceCode[fileName])
+				functionName := getFunctionName(findFunctionAtLine(tree, lineNum), input.SourceCode[fileName])
 				// log.Println("New line in function ", functionName, " at ", lineNum)
 
-				if arrutil.Contains(importantFunctions, functionName) {
+				if arrutil.Contains(input.ImportantFunctions, functionName) {
 					ImportantIncreaseCount += jumpLine + 1
 				}
 				AllIncreaseCount += jumpLine + 1
@@ -385,7 +387,7 @@ func CalculateFuzzerScore(
 			}
 		}
 	}
-	log.Println("Fuzzer", fuzzerName, "find", AllIncreaseCount, "increases in total,", ImportantIncreaseCount, "of them are important")
+	log.Println("Fuzzer", input.FuzzerName, "find", AllIncreaseCount, "increases in total,", ImportantIncreaseCount, "of them are important")
 	// log.Printf("Fuzzer score calculated: %+v", score)
 	return score
 }
@@ -451,53 +453,4 @@ func findFunctionWithQuery(ast *sitter.Tree, sourceCode []byte, funcName string)
 	}
 
 	return nil
-}
-
-func analyzeFunction(funcNode *sitter.Node, sourceCode []byte) ConstraintScore {
-	if funcNode == nil {
-		return ConstraintScore{}
-	}
-
-	queryStr := `(if_statement) @target`
-
-	q, err := sitter.NewQuery([]byte(queryStr), cpp.GetLanguage())
-	if err != nil {
-		return nil
-	}
-	defer q.Close()
-
-	qc := sitter.NewQueryCursor()
-	defer qc.Close()
-
-	qc.Exec(q, funcNode)
-
-	score := ConstraintScore{}
-	for {
-		match, ok := qc.NextMatch()
-		if !ok {
-			break
-		}
-		for _, capture := range match.Captures {
-			if q.CaptureNameForId(capture.Index) == "target" {
-				condition := findIfCondition(capture.Node)
-				if condition != nil {
-					constraintType := analyzeIfClause(condition, sourceCode)
-					score[constraintType] += 1.0
-				}
-			}
-		}
-	}
-
-	// normalize the score
-	maxScore := 0.0
-	for _, v := range score {
-		if v > maxScore {
-			maxScore = v
-		}
-	}
-	for k := range score {
-		score[k] /= maxScore
-	}
-
-	return score
 }

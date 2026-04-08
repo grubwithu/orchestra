@@ -1,9 +1,11 @@
 # Orchestra: Coordinating Multiple Fuzzers to Solve Code Constraint Bottlenecks
 This is a module that runs with [pfuzzer](https://github.com/grubwithu/pfuzzer). It can tell pfuzzer which corpus to focus on.
 
+> HFC is an alias of Orchestra.
+
 ## Usage
 
-> Docker is recommended to run HFC.
+> Docker is recommended to run Orchestra.
 
 Pre-requisite:
 - Clang-18, LLVM-18, CMake, Build-essential, and so on...
@@ -22,7 +24,7 @@ $ bash scripts/run_demo.sh freetype2
 ```
 
 This script will:
-- Build HFC in `build` directory.
+- Build Orchestra in `build` directory.
 - Compile pfuzzer in `pfuzzer/build` directory, and we can get `libfuzzer.a`.
 - Build the target(freetype2) binary.
   - Generate static profiles of the target binary(using opt and fuzz-introspector). (We can get `test/freetype2/build__HFC_qzmp__/ftfuzzer` as A)
@@ -39,29 +41,7 @@ We provide Dockerfiles to build the test environment.
 $ docker build -t hfc-base:latest .
 $ cd test/
 $ docker build -t hfc-test:latest .
+$ docker run -it --privileged hfc-test bash
+## Inside the container
+$ bash script/run_demo.sh freetype2 -seed_strategy=6 -fuzzer_strategy=6
 ```
-
-## TODO 26.1.11
-
-1. [pfuzzer] Use command argument to specify fuzzing strategy. (DONE)
-2. [pfuzzer] Add more fuzzing strategies.
-3. [HFC] C++ support: parse name like `_ZN....`. (Go support is not complete.)
-4. [HFC] Record coverage increase or decrease for every fuzzers. (DONE)
-
-## TODO 26.1.19
-
-1. [pfuzzer] Modify `GetJobSeeds` to support fuzzing strategy.
-2. [HFC] Add more methods to choose constraint group 
-
-## TODO 26.3.23
-
-1. JSON Region (Un)covered count (DONE)
-2. Module 1 Global JSON Calculation (DONE) -> Important Function CallTrace (DONE) -> Weight Calculation (DONE) -> Analysis Constraint Feature Count(AST) (DONE) -> Extract TOKEN 2 Dictionary 
-3. Module 2 Incremental LineCov -> Fuzzer Constraint Weight Matrix(Constraint Weight, New Branch / JobBudget) (DONE)
-4. Add JobID JobBudget (DONE)
-5. CallTrace 2 Pfuzzer for seed distance calculation
-6. FuzzerFork.cpp
-
-# TODO 26.3.30
-1. Fuzzer parameters
-2. Dict
