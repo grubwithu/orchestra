@@ -40,7 +40,8 @@ type Plugin interface {
 	Process(ctx context.Context, data *PluginData) error
 
 	// Result returns the current state/result of the plugin
-	Result(ctx context.Context) (any, error)
+	// The previousResults parameter contains results from plugins that were processed before this one
+	Result(ctx context.Context, previousResults map[string]any) (any, error)
 
 	// Cleanup releases resources used by the plugin
 	Cleanup(ctx context.Context) error

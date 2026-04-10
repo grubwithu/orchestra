@@ -249,7 +249,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 }
 
 // Prerun plugin should return nothing
-func (p *Plugin) Result(ctx context.Context) (any, error) {
+func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (any, error) {
 	return nil, nil
 }
 

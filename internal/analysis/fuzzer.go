@@ -9,6 +9,7 @@ package analysis
 
 import (
 	"log"
+	"math/rand"
 	"strings"
 
 	"github.com/gookit/goutil/arrutil"
@@ -453,4 +454,60 @@ func findFunctionWithQuery(ast *sitter.Tree, sourceCode []byte, funcName string)
 	}
 
 	return nil
+}
+
+func SelectFuzzerByScores(constraintGroup ConstraintGroup, fuzzerScores map[string]ConstraintScore) string {
+	fuzzerName := ""
+
+	if len(fuzzerScores) == 0 {
+		return fuzzerName
+	}
+
+	type fuzzerScore struct {
+		name       string
+		dotProduct float64
+	}
+
+	var fuzzerScoresList []fuzzerScore
+
+	for fuzzerNameKey, fuzzerConstraints := range fuzzerScores {
+		dotProduct := 0.0
+
+		for constraintName, groupScore := range constraintGroup.ConstraintScore {
+			if fuzzerScoreVal, ok := fuzzerConstraints[constraintName]; ok {
+				dotProduct += groupScore * fuzzerScoreVal
+			}
+		}
+
+		fuzzerScoresList = append(fuzzerScoresList, fuzzerScore{name: fuzzerNameKey, dotProduct: dotProduct})
+	}
+
+	sumScores := 0.0
+	for _, entry := range fuzzerScoresList {
+		sumScores += entry.dotProduct
+	}
+
+	if sumScores > 0 {
+		randomValue := float64(rand.Intn(1000)) / 1000.0
+		cumulativeProbability := 0.0
+
+		for _, entry := range fuzzerScoresList {
+			probability := entry.dotProduct / sumScores
+			cumulativeProbability += probability
+
+			if randomValue <= cumulativeProbability {
+				fuzzerName = entry.name
+				break
+			}
+		}
+
+		if fuzzerName == "" && len(fuzzerScoresList) > 0 {
+			fuzzerName = fuzzerScoresList[0].name
+		}
+	} else if len(fuzzerScoresList) > 0 {
+		randomIndex := rand.Intn(len(fuzzerScoresList))
+		fuzzerName = fuzzerScoresList[randomIndex].name
+	}
+
+	return fuzzerName
 }

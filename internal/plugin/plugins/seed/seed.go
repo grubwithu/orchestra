@@ -13,7 +13,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"sync"
 
 	"github.com/grubwithu/orchestra/internal/analysis"
@@ -21,9 +20,13 @@ import (
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
 )
 
-type CoverageData struct {
+type SeedData struct {
 	GlobalCov        *analysis.ProgCovData
 	ConstraintGroups []analysis.ConstraintGroup
+}
+
+type SeedResult struct {
+	ConstraintGroup *analysis.ConstraintGroup `json:"constraint_group"`
 }
 
 // Plugin handles coverage data processing
@@ -116,7 +119,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 	prerunData.ASTMutex.Unlock()
 
-	coverageResult := CoverageData{
+	coverageResult := SeedData{
 		GlobalCov:        p.globalCov,
 		ConstraintGroups: p.constraintGroups,
 	}
@@ -132,60 +135,18 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 }
 
 // Result returns the current state/result of the plugin
-func (p *Plugin) Result(ctx context.Context) (any, error) {
+func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (any, error) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
-	var selectedGroup *analysis.ConstraintGroup
+	var result SeedResult
 
 	// Select a constraint group with weighted random selection
 	if len(p.constraintGroups) > 0 {
-		selectedGroup = selectConstraintGroup(p.constraintGroups)
+		result.ConstraintGroup = analysis.SelectConstraintGroup(p.constraintGroups)
 	}
 
-	return map[string]any{
-		"constraint_group": selectedGroup,
-	}, nil
-}
-
-// selectConstraintGroup selects a constraint group with weighted random selection
-// Groups with higher TotalImportance have higher probability of being selected
-func selectConstraintGroup(groups []analysis.ConstraintGroup) *analysis.ConstraintGroup {
-	if len(groups) == 0 {
-		return nil
-	}
-
-	// Calculate weights based on TotalImportance
-	// Use exponential weighting to give higher importance to top groups
-	weights := make([]float64, len(groups))
-	totalWeight := 0.0
-
-	for i, group := range groups {
-		// Weight = TotalImportance * (1 + (len(groups) - i) / len(groups))
-		// This gives extra weight to groups that appear earlier in the sorted list
-		positionBonus := 1.0 + float64(len(groups)-i)/float64(len(groups))
-		weights[i] = group.TotalImportance * positionBonus
-		totalWeight += weights[i]
-	}
-
-	// If all weights are 0, return a random group
-	if totalWeight == 0 {
-		return &groups[rand.Intn(len(groups))]
-	}
-
-	// Weighted random selection
-	r := rand.Float64() * totalWeight
-	cumulativeWeight := 0.0
-
-	for i, weight := range weights {
-		cumulativeWeight += weight
-		if r <= cumulativeWeight {
-			return &groups[i]
-		}
-	}
-
-	// Fallback to last group
-	return &groups[len(groups)-1]
+	return result, nil
 }
 
 // Cleanup cleans up the plugin resources

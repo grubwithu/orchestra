@@ -6,6 +6,7 @@ package analysis
 
 import (
 	"math"
+	"math/rand"
 	"slices"
 	"sort"
 	"strings"
@@ -310,4 +311,44 @@ func analyzeFunction(funcNode *sitter.Node, sourceCode []byte, lineCov *FileLine
 	}
 
 	return score
+}
+
+// selectConstraintGroup selects a constraint group with weighted random selection
+// Groups with higher TotalImportance have higher probability of being selected
+func SelectConstraintGroup(groups []ConstraintGroup) *ConstraintGroup {
+	if len(groups) == 0 {
+		return nil
+	}
+
+	// Calculate weights based on TotalImportance
+	// Use exponential weighting to give higher importance to top groups
+	weights := make([]float64, len(groups))
+	totalWeight := 0.0
+
+	for i, group := range groups {
+		// Weight = TotalImportance * (1 + (len(groups) - i) / len(groups))
+		// This gives extra weight to groups that appear earlier in the sorted list
+		positionBonus := 1.0 + float64(len(groups)-i)/float64(len(groups))
+		weights[i] = group.TotalImportance * positionBonus
+		totalWeight += weights[i]
+	}
+
+	// If all weights are 0, return a random group
+	if totalWeight == 0 {
+		return &groups[rand.Intn(len(groups))]
+	}
+
+	// Weighted random selection
+	r := rand.Float64() * totalWeight
+	cumulativeWeight := 0.0
+
+	for i, weight := range weights {
+		cumulativeWeight += weight
+		if r <= cumulativeWeight {
+			return &groups[i]
+		}
+	}
+
+	// Fallback to last group
+	return &groups[len(groups)-1]
 }

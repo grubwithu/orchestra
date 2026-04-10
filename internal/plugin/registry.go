@@ -174,8 +174,8 @@ func (r *Registry) Results(ctx context.Context) (map[string]any, error) {
 			continue
 		}
 
-		// Call Result to get current state
-		result, err := p.Result(ctx)
+		// Call Result to get current state, passing previous results
+		result, err := p.Result(ctx, results)
 		if err != nil {
 			log.Printf("Error getting results from plugin '%s': %v\n", p.Name(), err)
 			continue

@@ -24,6 +24,11 @@ type Plugin struct {
 	mutex            sync.RWMutex
 }
 
+type FuzzerResult struct {
+	FuzzerScores   map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
+	SelectedFuzzer string                              `json:"selected_fuzzer"`
+}
+
 // NewPlugin creates a new constraint plugin
 func NewPlugin() *Plugin {
 	return &Plugin{
@@ -88,7 +93,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 
 	// Get coverage data
-	coverageData, ok := data.Data["coverage"].(seed.CoverageData)
+	coverageData, ok := data.Data["coverage"].(seed.SeedData)
 	if !ok {
 		return fmt.Errorf("coverage data not found for fuzzer: %s", data.Fuzzer)
 	}
@@ -185,13 +190,21 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 }
 
 // Result returns the current state/result of the plugin
-func (p *Plugin) Result(ctx context.Context) (any, error) {
+func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (any, error) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
-	return map[string]any{
-		"fuzzer_scores": p.fuzzerScores,
-	}, nil
+	var result FuzzerResult
+
+	result.FuzzerScores = p.fuzzerScores
+	if previousResults["seed"] != nil {
+		seedResult, ok := previousResults["seed"].(seed.SeedResult)
+		if ok {
+			result.SelectedFuzzer = analysis.SelectFuzzerByScores(*seedResult.ConstraintGroup, p.fuzzerScores)
+		}
+	}
+
+	return result, nil
 }
 
 // Cleanup cleans up the plugin resources

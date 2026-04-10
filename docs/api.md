@@ -64,7 +64,8 @@ Response Body:
             "art_opr": 0.2,
             "comp_opr": 0.6
           }
-        }
+        },
+        "selected_fuzzer": "AFL"
       },
       "seed": {
         "constraint_group": {
