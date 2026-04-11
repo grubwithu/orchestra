@@ -121,12 +121,11 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 	prerunData.ASTMutex.Unlock()
 
-	seedData := SeedData{
+	seedData := &SeedData{
 		GlobalCov:        p.globalCov,
 		ConstraintGroups: p.constraintGroups,
 	}
-
-	data.Data["coverage"] = seedData
+	data.Data[PLUGIN_NAME] = seedData
 
 	if p.config.Verbose {
 		p.Log(ctx, "Process: fuzzer=%s, funcs=%d, groups=%d\n", data.Fuzzer, len(p.globalCov.Functions), len(p.constraintGroups))
