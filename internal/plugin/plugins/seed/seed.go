@@ -28,7 +28,7 @@ type SeedData struct {
 }
 
 type SeedResult struct {
-	ConstraintGroup *analysis.ConstraintGroup `json:"constraint_group"`
+	ConstraintGroup *analysis.ConstraintGroup `json:"constraint_group,omitempty"`
 }
 
 // Plugin handles coverage data processing

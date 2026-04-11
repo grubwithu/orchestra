@@ -27,8 +27,8 @@ type Plugin struct {
 }
 
 type FuzzerResult struct {
-	FuzzerScores   map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
-	SelectedFuzzer string                              `json:"selected_fuzzer"`
+	FuzzerScores   map[string]analysis.ConstraintScore `json:"fuzzer_scores,omitempty"`
+	SelectedFuzzer string                              `json:"selected_fuzzer,omitempty"`
 }
 
 // NewPlugin creates a new constraint plugin

@@ -27,7 +27,7 @@ type FunctionDict struct {
 }
 
 type DictResult struct {
-	Content string `json:"content"`
+	Content string `json:"content,omitempty"`
 }
 
 type Plugin struct {
