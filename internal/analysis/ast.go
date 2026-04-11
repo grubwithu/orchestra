@@ -1,57 +1,17 @@
 package analysis
 
 /**
- * GetFuzzerScore - get fuzzer score from constraint groups.
- *
- * We believe that different fuzzers have varying preferences for different types of constraints.
- * Therefore, we can calculate a preference score for each fuzzer regarding various constraint types.
+ * All Functions related to AST(sitter) analysis.
  **/
 
 import (
 	"log"
-	"math/rand"
 	"strings"
 
 	"github.com/gookit/goutil/arrutil"
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/smacker/go-tree-sitter/cpp"
 )
-
-type ConstraintType string
-
-const (
-	CT_VALUE_COMPARISON     ConstraintType = "val_cmp"  // value comparison
-	CT_BITWISE_OPERATION    ConstraintType = "bit_opr"  // bitwise operation
-	CT_STRING_MATCH         ConstraintType = "str_mat"  // string match
-	CT_ARITHMETIC_OPERATION ConstraintType = "art_opr"  // arithmetic operation
-	CT_COMPOUND_OPERATION   ConstraintType = "comp_opr" // compound operation
-)
-
-type ConstraintScore map[ConstraintType]float64
-
-func (cs ConstraintScore) Copy() ConstraintScore {
-	res := ConstraintScore{}
-	for k, v := range cs {
-		res[k] = v
-	}
-	return res
-}
-
-func UpdateFuzzerScore(cur ConstraintScore, prev ConstraintScore) ConstraintScore {
-	if prev == nil {
-		prev = ConstraintScore{}
-	}
-
-	for ct := range cur {
-		if _, ok := prev[ct]; ok {
-			prev[ct] = cur[ct] + prev[ct]/10.0
-		} else {
-			prev[ct] = cur[ct]
-		}
-	}
-
-	return prev
-}
 
 // line is 0-based
 func drillDownToLine(node *sitter.Node, targetLine uint32) *sitter.Node {
@@ -284,6 +244,85 @@ func analyzeIfClause(condition *sitter.Node, sourceCode []byte) ConstraintType {
 	return CT_COMPOUND_OPERATION
 }
 
+func calculateScore(group ConstraintGroup, input InputGetConstraintGroups) ConstraintScore {
+	// Initialize total scores
+	totalScores := ConstraintScore{
+		CT_VALUE_COMPARISON:     0,
+		CT_BITWISE_OPERATION:    0,
+		CT_STRING_MATCH:         0,
+		CT_ARITHMETIC_OPERATION: 0,
+		CT_COMPOUND_OPERATION:   0,
+	}
+
+	// Create function profile map for quick lookup
+	functionProfileMap := make(map[string]*FunctionProfile)
+	for _, profile := range input.FunctionProfiles {
+		functionProfileMap[profile.FunctionName] = profile
+	}
+
+	// Calculate score for each function in the path
+	for i, profile := range group.PathDetail {
+		// Check if AST exists for this file
+		tree, hasAST := input.AST[profile.FunctionSourceFile]
+		if !hasAST {
+			continue
+		}
+
+		// Find function node
+		var funcNode *sitter.Node
+		if strings.HasPrefix(profile.FunctionName, "_Z") {
+			funcNode = findFunctionAtLine(tree, uint32(profile.FunctionLinenumber))
+		} else {
+			funcNode = findFunctionByName(tree, input.SourceCode[profile.FunctionSourceFile], profile.FunctionName)
+		}
+
+		if funcNode == nil {
+			continue
+		}
+
+		var lineCov *FileLineCov
+		for _, line := range input.LineCovs {
+			if line.File == profile.FunctionSourceFile {
+				lineCov = &line
+				break
+			}
+		}
+
+		// Analyze function
+		scores := analyzeFunction(funcNode, input.SourceCode[profile.FunctionSourceFile], lineCov)
+
+		// Apply weight: closer to leaf = higher weight
+		// Weight ranges from 0.5 (root) to 1.5 (leaf)
+		weight := 0.5 + (float64(i) / float64(len(group.Path)-1))
+
+		// Add weighted scores to total
+		for constraintType, score := range scores {
+			totalScores[constraintType] += score * weight
+		}
+	}
+
+	// Normalize the scores
+	maxScore := 0.0
+	for _, score := range totalScores {
+		if score > maxScore {
+			maxScore = score
+		}
+	}
+
+	if maxScore > 0 {
+		for constraintType, score := range totalScores {
+			totalScores[constraintType] = score / maxScore
+		}
+	} else {
+		// If all scores are 0, set them to 0 (avoid NaN)
+		for constraintType := range totalScores {
+			totalScores[constraintType] = 0
+		}
+	}
+
+	return totalScores
+}
+
 type InputCalculateFuzzerScore struct {
 	FuzzerName         string
 	CurFileLineCovs    []FileLineCov
@@ -293,6 +332,12 @@ type InputCalculateFuzzerScore struct {
 	ImportantFunctions []string
 }
 
+/**
+ * GetFuzzerScore - get fuzzer score from constraint groups.
+ *
+ * We believe that different fuzzers have varying preferences for different types of constraints.
+ * Therefore, we can calculate a preference score for each fuzzer regarding various constraint types.
+ **/
 func CalculateFuzzerScore(input InputCalculateFuzzerScore) ConstraintScore {
 	score := ConstraintScore{
 		CT_VALUE_COMPARISON:     0,
@@ -393,20 +438,7 @@ func CalculateFuzzerScore(input InputCalculateFuzzerScore) ConstraintScore {
 	return score
 }
 
-func NormalizeScore(score ConstraintScore) ConstraintScore {
-	maxScore := 0.0
-	for _, v := range score {
-		if v > maxScore {
-			maxScore = v
-		}
-	}
-	for k := range score {
-		score[k] /= maxScore
-	}
-	return score
-}
-
-func findFunctionWithQuery(ast *sitter.Tree, sourceCode []byte, funcName string) *sitter.Node {
+func findFunctionByName(ast *sitter.Tree, sourceCode []byte, funcName string) *sitter.Node {
 	root := ast.RootNode()
 
 	queryStr := `
@@ -456,58 +488,108 @@ func findFunctionWithQuery(ast *sitter.Tree, sourceCode []byte, funcName string)
 	return nil
 }
 
-func SelectFuzzerByScores(constraintGroup ConstraintGroup, fuzzerScores map[string]ConstraintScore) string {
-	fuzzerName := ""
-
-	if len(fuzzerScores) == 0 {
-		return fuzzerName
+func analyzeFunction(funcNode *sitter.Node, sourceCode []byte, lineCov *FileLineCov) ConstraintScore {
+	if funcNode == nil {
+		return ConstraintScore{}
 	}
 
-	type fuzzerScore struct {
-		name       string
-		dotProduct float64
-	}
-
-	var fuzzerScoresList []fuzzerScore
-
-	for fuzzerNameKey, fuzzerConstraints := range fuzzerScores {
-		dotProduct := 0.0
-
-		for constraintName, groupScore := range constraintGroup.ConstraintScore {
-			if fuzzerScoreVal, ok := fuzzerConstraints[constraintName]; ok {
-				dotProduct += groupScore * fuzzerScoreVal
+	var maxLineHit uint32
+	if lineCov != nil {
+		for i := funcNode.StartPoint().Row; i <= funcNode.EndPoint().Row; i++ {
+			if lineCov.Lines[i].Count > maxLineHit {
+				maxLineHit = lineCov.Lines[i].Count
 			}
 		}
-
-		fuzzerScoresList = append(fuzzerScoresList, fuzzerScore{name: fuzzerNameKey, dotProduct: dotProduct})
 	}
 
-	sumScores := 0.0
-	for _, entry := range fuzzerScoresList {
-		sumScores += entry.dotProduct
+	queryStr := `(if_statement) @target`
+
+	q, err := sitter.NewQuery([]byte(queryStr), cpp.GetLanguage())
+	if err != nil {
+		return nil
 	}
+	defer q.Close()
 
-	if sumScores > 0 {
-		randomValue := float64(rand.Intn(1000)) / 1000.0
-		cumulativeProbability := 0.0
+	qc := sitter.NewQueryCursor()
+	defer qc.Close()
 
-		for _, entry := range fuzzerScoresList {
-			probability := entry.dotProduct / sumScores
-			cumulativeProbability += probability
+	qc.Exec(q, funcNode)
 
-			if randomValue <= cumulativeProbability {
-				fuzzerName = entry.name
-				break
+	score := ConstraintScore{}
+	for {
+		match, ok := qc.NextMatch()
+		if !ok {
+			break
+		}
+		for _, capture := range match.Captures {
+			if q.CaptureNameForId(capture.Index) == "target" {
+				condition := findIfCondition(capture.Node)
+				if condition != nil {
+					constraintType := analyzeIfClause(condition, sourceCode)
+
+					var scale float64 = 1.0
+					if lineCov != nil {
+						var avgHit uint32
+						for row := capture.Node.StartPoint().Row; row <= capture.Node.EndPoint().Row; row++ {
+							avgHit += lineCov.Lines[row].Count
+						}
+						avgHit /= capture.Node.EndPoint().Row - capture.Node.StartPoint().Row + 1
+						scale = (1 - float64(avgHit)/float64(maxLineHit)) + 0.5 // Range 0.5-1.5, low hit gives higher score
+					}
+
+					score[constraintType] += 1.0 * scale
+				}
 			}
 		}
-
-		if fuzzerName == "" && len(fuzzerScoresList) > 0 {
-			fuzzerName = fuzzerScoresList[0].name
-		}
-	} else if len(fuzzerScoresList) > 0 {
-		randomIndex := rand.Intn(len(fuzzerScoresList))
-		fuzzerName = fuzzerScoresList[randomIndex].name
 	}
 
-	return fuzzerName
+	// normalize the score
+	maxScore := 0.0
+	for _, v := range score {
+		if v > maxScore {
+			maxScore = v
+		}
+	}
+	for k := range score {
+		score[k] /= maxScore
+	}
+
+	return score
+}
+
+func ExtractStringLiterals(tree *sitter.Tree, sourceCode []byte, funcName string) []string {
+	funcNode := findFunctionByName(tree, sourceCode, funcName)
+	if funcNode == nil {
+		return nil
+	}
+
+	var results []string
+
+	queryStr := `(string_literal (string_content) @content)`
+	q, err := sitter.NewQuery([]byte(queryStr), cpp.GetLanguage())
+	if err != nil {
+		return nil
+	}
+	defer q.Close()
+
+	qc := sitter.NewQueryCursor()
+	defer qc.Close()
+
+	qc.Exec(q, funcNode)
+
+	for {
+		match, ok := qc.NextMatch()
+		if !ok {
+			break
+		}
+
+		for _, capture := range match.Captures {
+			content := capture.Node.Content(sourceCode)
+			if len(content) > 0 {
+				results = append(results, content)
+			}
+		}
+	}
+
+	return results
 }

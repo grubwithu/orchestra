@@ -135,6 +135,7 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 
 	var lines []string
 	itemIndex := 0
+	seenValues := make(map[string]bool)
 
 	for _, profile := range constraintGroup.PathDetail {
 		if profile == nil {
@@ -143,6 +144,10 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 		funcName := profile.FunctionName
 		if funcDict, exists := p.funcDicts[funcName]; exists {
 			for _, item := range funcDict.DictItems {
+				if seenValues[item.Value] {
+					continue
+				}
+				seenValues[item.Value] = true
 				escapedValue := escapeForDict(item.Value)
 				lines = append(lines, fmt.Sprintf("keyword%d=\"%s\"", itemIndex, escapedValue))
 				itemIndex++
@@ -171,13 +176,11 @@ func escapeForDict(s string) string {
 }
 
 func (p *Plugin) findFunctionProfile(callTree analysis.CallTree, funcName string) *analysis.FunctionProfile {
-	if callTree.Nodes == nil {
-		return nil
-	}
-
-	for _, node := range callTree.Nodes {
-		if node.FunctionProfile != nil && node.FunctionProfile.FunctionName == funcName {
-			return node.FunctionProfile
+	if callTree.ProgramProfile != nil && callTree.ProgramProfile.AllFunctions.Elements != nil {
+		for _, profile := range callTree.ProgramProfile.AllFunctions.Elements {
+			if profile.FunctionName == funcName {
+				return profile
+			}
 		}
 	}
 	return nil
@@ -190,77 +193,26 @@ func (p *Plugin) computeDictForFunction(funcProfile *analysis.FunctionProfile) [
 		return dictItems
 	}
 
+	p.extractNumericConstants(funcProfile, &dictItems)
+
 	tree, hasAST := p.ast[funcProfile.FunctionSourceFile]
 	if !hasAST {
-		p.extractNumericConstants(funcProfile, &dictItems)
 		return dictItems
 	}
 
 	sourceCode := p.sourceCode[funcProfile.FunctionSourceFile]
 	if sourceCode == nil {
-		p.extractNumericConstants(funcProfile, &dictItems)
 		return dictItems
 	}
 
-	funcNode := p.findFunctionNode(tree, funcProfile.FunctionLinenumber, funcProfile.FunctionName)
-	if funcNode == nil {
-		p.extractNumericConstants(funcProfile, &dictItems)
-		return dictItems
+	literals := analysis.ExtractStringLiterals(tree, sourceCode, funcProfile.FunctionName)
+	for _, str := range literals {
+		dictItems = append(dictItems, DictItem{
+			Type:  "string",
+			Value: str,
+		})
 	}
-
-	p.extractStringLiterals(funcNode, sourceCode, &dictItems)
-	p.extractNumericConstants(funcProfile, &dictItems)
-
 	return dictItems
-}
-
-func (p *Plugin) findFunctionNode(tree *sitter.Tree, lineNumber int, funcName string) *sitter.Node {
-	rootNode := tree.RootNode()
-
-	var findFunc func(node *sitter.Node) *sitter.Node
-	findFunc = func(node *sitter.Node) *sitter.Node {
-		if node.Type() == "function_definition" || node.Type() == "function_declarator" {
-			startPoint := node.StartPoint()
-			if int(startPoint.Row)+1 == lineNumber {
-				return node
-			}
-		}
-
-		child := node.NamedChild(0)
-		for child != nil {
-			if result := findFunc(child); result != nil {
-				return result
-			}
-			child = child.NextSibling()
-		}
-		return nil
-	}
-
-	return findFunc(rootNode)
-}
-
-func (p *Plugin) extractStringLiterals(node *sitter.Node, sourceCode []byte, dictItems *[]DictItem) {
-	var findStrings func(n *sitter.Node)
-	findStrings = func(n *sitter.Node) {
-		if n.Type() == "string_literal" {
-			content := n.Content(sourceCode)
-			content = strings.Trim(content, "\"")
-			if len(content) > 0 {
-				*dictItems = append(*dictItems, DictItem{
-					Type:  "string",
-					Value: content,
-				})
-			}
-		}
-
-		child := n.NamedChild(0)
-		for child != nil {
-			findStrings(child)
-			child = child.NextSibling()
-		}
-	}
-
-	findStrings(node)
 }
 
 func (p *Plugin) extractNumericConstants(funcProfile *analysis.FunctionProfile, dictItems *[]DictItem) {
