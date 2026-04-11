@@ -52,6 +52,10 @@ func (p *Plugin) Name() string {
 // Constraint plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
 	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
+	if !ok {
+		return false
+	}
+	_, ok = data.Data[seed.PLUGIN_NAME].(*seed.SeedResult)
 	return ok
 }
 
@@ -95,7 +99,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 
 	// Get coverage data
-	coverageData, ok := data.Data["coverage"].(seed.SeedData)
+	coverageData, ok := data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
 	if !ok {
 		return fmt.Errorf("coverage data not found for fuzzer: %s", data.Fuzzer)
 	}
@@ -204,13 +208,13 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 
 	result.FuzzerScores = p.fuzzerScores
 	if previousResults[seed.PLUGIN_NAME] != nil {
-		seedResult, ok := previousResults[seed.PLUGIN_NAME].(seed.SeedResult)
+		seedResult, ok := previousResults[seed.PLUGIN_NAME].(*seed.SeedResult)
 		if ok && seedResult.ConstraintGroup != nil && len(p.fuzzerScores) != 0 {
 			result.SelectedFuzzer = analysis.SelectFuzzerByScores(*seedResult.ConstraintGroup, p.fuzzerScores)
 		}
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // Cleanup cleans up the plugin resources

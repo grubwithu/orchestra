@@ -62,6 +62,7 @@ func (p *Plugin) Require(data *plugin.PluginData) bool {
 
 func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	p.config = config
+	p.Log(ctx, "Initialized\n")
 	return nil
 }
 
@@ -122,19 +123,14 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 
 	var result DictResult
 
-	seedResult, ok := previousResults[seed.PLUGIN_NAME]
+	seedResult, ok := previousResults[seed.PLUGIN_NAME].(*seed.SeedResult)
 	if !ok {
 		return result, nil
 	}
 
-	seedResultMap, ok := seedResult.(map[string]any)
-	if !ok {
-		return result, nil
-	}
-
-	constraintGroup, ok := seedResultMap["constraint_group"].(*analysis.ConstraintGroup)
-	if !ok || constraintGroup == nil {
-		return result, nil
+	constraintGroup := seedResult.ConstraintGroup
+	if constraintGroup == nil {
+		return nil, nil
 	}
 
 	var lines []string
@@ -155,7 +151,7 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 	}
 
 	result.Content = strings.Join(lines, "\n")
-	return result, nil
+	return &result, nil
 }
 
 func escapeForDict(s string) string {

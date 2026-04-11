@@ -147,7 +147,7 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 		result.ConstraintGroup = analysis.SelectConstraintGroup(p.constraintGroups)
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // Cleanup cleans up the plugin resources
