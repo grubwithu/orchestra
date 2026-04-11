@@ -20,6 +20,8 @@ import (
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
 )
 
+const PLUGIN_NAME = "seed"
+
 type SeedData struct {
 	GlobalCov        *analysis.ProgCovData
 	ConstraintGroups []analysis.ConstraintGroup
@@ -44,13 +46,13 @@ func NewPlugin() *Plugin {
 
 // Name returns the plugin name
 func (p *Plugin) Name() string {
-	return "seed"
+	return PLUGIN_NAME
 }
 
 // Require checks if the plugin should process the given data
 // Seed plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
-	_, ok := data.Data["prerun"].(*prerun.PrerunData)
+	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
 	return ok && data.Period != "begin"
 }
 
@@ -67,7 +69,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	defer p.mutex.Unlock()
 
 	// Get prerun results
-	prerunData, ok := data.Data["prerun"].(*prerun.PrerunData)
+	prerunData, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
 	if !ok {
 		return fmt.Errorf("prerun data not found for fuzzer: %s", data.Fuzzer)
 	}
@@ -119,12 +121,12 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 	prerunData.ASTMutex.Unlock()
 
-	coverageResult := SeedData{
+	seedData := SeedData{
 		GlobalCov:        p.globalCov,
 		ConstraintGroups: p.constraintGroups,
 	}
 
-	data.Data["coverage"] = coverageResult
+	data.Data["coverage"] = seedData
 
 	if p.config.Verbose {
 		p.Log(ctx, "Process: fuzzer=%s, funcs=%d, groups=%d\n", data.Fuzzer, len(p.globalCov.Functions), len(p.constraintGroups))

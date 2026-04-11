@@ -31,12 +31,13 @@ var (
 )
 
 type ConstraintGroup struct {
-	GroupId         string          `json:"group_id"`
-	Path            []string        `json:"path"`             // Path from root to leaf
-	LeafFunction    string          `json:"leaf_function"`    // The leaf function
-	FileName        string          `json:"file_name"`        // File name of the leaf function
-	TotalImportance float64         `json:"importance"`       // Total weighted score
-	ConstraintScore ConstraintScore `json:"constraint_score"` // Constraint preference score
+	GroupId         string             `json:"group_id"`
+	Path            []string           `json:"path"`             // Path from root to leaf (function names for JSON output)
+	PathDetail      []*FunctionProfile `json:"-"`                // Detailed path with FunctionProfile (internal use)
+	LeafFunction    string             `json:"leaf_function"`    // The leaf function
+	FileName        string             `json:"file_name"`        // File name of the leaf function
+	TotalImportance float64            `json:"importance"`       // Total weighted score
+	ConstraintScore ConstraintScore    `json:"constraint_score"` // Constraint preference score
 }
 
 type InputGetConstraintGroups struct {
@@ -96,12 +97,15 @@ func GetConstraintGroups(input InputGetConstraintGroups) []ConstraintGroup {
 	for _, leafNode := range leafNodes {
 		// Generate path from root to leaf
 		path := []string{}
+		pathDetail := []*FunctionProfile{}
 		node := leafNode
 		for node != nil {
 			path = append(path, node.FunctionProfile.FunctionName)
+			pathDetail = append(pathDetail, node.FunctionProfile)
 			node = node.Parent
 		}
 		slices.Reverse(path)
+		slices.Reverse(pathDetail)
 
 		// Calculate weighted score for this path
 		totalScore := 0.0
@@ -135,6 +139,7 @@ func GetConstraintGroups(input InputGetConstraintGroups) []ConstraintGroup {
 		group := ConstraintGroup{
 			GroupId:         uuid.New().String(),
 			Path:            path,
+			PathDetail:      pathDetail,
 			LeafFunction:    leafNode.FunctionProfile.FunctionName,
 			FileName:        leafNode.FunctionProfile.FunctionSourceFile,
 			TotalImportance: totalScore,
@@ -176,13 +181,7 @@ func calculateScore(group ConstraintGroup, input InputGetConstraintGroups) Const
 	}
 
 	// Calculate score for each function in the path
-	for i, funcName := range group.Path {
-		// Get function profile
-		profile, ok := functionProfileMap[funcName]
-		if !ok {
-			continue
-		}
-
+	for i, profile := range group.PathDetail {
 		// Check if AST exists for this file
 		tree, hasAST := input.AST[profile.FunctionSourceFile]
 		if !hasAST {
@@ -191,10 +190,10 @@ func calculateScore(group ConstraintGroup, input InputGetConstraintGroups) Const
 
 		// Find function node
 		var funcNode *sitter.Node
-		if strings.HasPrefix(funcName, "_Z") {
+		if strings.HasPrefix(profile.FunctionName, "_Z") {
 			funcNode = findFunctionAtLine(tree, uint32(profile.FunctionLinenumber))
 		} else {
-			funcNode = findFunctionWithQuery(tree, input.SourceCode[profile.FunctionSourceFile], funcName)
+			funcNode = findFunctionWithQuery(tree, input.SourceCode[profile.FunctionSourceFile], profile.FunctionName)
 		}
 
 		if funcNode == nil {

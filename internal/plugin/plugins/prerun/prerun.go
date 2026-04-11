@@ -20,15 +20,18 @@ import (
 	"github.com/smacker/go-tree-sitter/cpp"
 )
 
+const PLUGIN_NAME = "prerun"
+
 type PrerunData struct {
-	CallTree   analysis.CallTree
-	DebugInfo  analysis.DebugInfo
-	Cov        int
-	ProgCov    analysis.ProgCovData
-	LineCov    []analysis.FileLineCov
-	AST        map[string]*sitter.Tree
-	ASTMutex   sync.Mutex
-	SourceCode map[string][]byte
+	CallTree    analysis.CallTree
+	ProgProfile *analysis.ProgramProfile
+	DebugInfo   analysis.DebugInfo
+	Cov         int
+	ProgCov     analysis.ProgCovData
+	LineCov     []analysis.FileLineCov
+	AST         map[string]*sitter.Tree
+	ASTMutex    sync.Mutex
+	SourceCode  map[string][]byte
 }
 
 // Plugin handles initial corpus processing
@@ -47,7 +50,7 @@ func NewPlugin() *Plugin {
 
 // Name returns the plugin name
 func (p *Plugin) Name() string {
-	return "prerun"
+	return PLUGIN_NAME
 }
 
 // Require checks if the plugin should process the given data
@@ -72,7 +75,7 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 
 	// Parse YAML with timing
 	start := time.Now()
-	staticData, err := analysis.ParseProfileFromYAML(profilePath, config.SrcPathMatch)
+	progProfile, err := analysis.ParseProfileFromYAML(profilePath, config.SrcPathMatch)
 	if err != nil {
 		p.Log(ctx, "Error parsing YAML: %v\n", err)
 		return err
@@ -82,7 +85,7 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 	// Parse call tree with timing
 	callTreePath := prefix
 	start = time.Now()
-	callTree, err := analysis.ParseCallTreeFromData(callTreePath, staticData)
+	callTree, err := analysis.ParseCallTreeFromData(callTreePath, progProfile)
 	if err != nil {
 		p.Log(ctx, "Error parsing call tree data: %v\n", err)
 		return err
@@ -171,13 +174,14 @@ func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
 
 	// Store initialization data
 	p.initData = PrerunData{
-		Cov:        cov,
-		ProgCov:    progCovData,
-		LineCov:    fileLineCovs,
-		AST:        ast,
-		SourceCode: sourceCode,
-		CallTree:   *callTree,
-		DebugInfo:  *debugInfo,
+		Cov:         cov,
+		ProgCov:     progCovData,
+		LineCov:     fileLineCovs,
+		AST:         ast,
+		SourceCode:  sourceCode,
+		CallTree:    *callTree,
+		ProgProfile: progProfile,
+		DebugInfo:   *debugInfo,
 	}
 	p.isInitialized = true
 
@@ -237,7 +241,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	prerunResult.ProgCov = progCovData
 	prerunResult.LineCov = lineCov
 
-	data.Data["prerun"] = prerunResult
+	data.Data[PLUGIN_NAME] = prerunResult
 
 	if p.config.Verbose {
 		p.Log(ctx, "Process: fuzzer=%s, corpus=%s, coverage=%d, funcs=%d, files=%d\n", data.Fuzzer, data.Corpus, cov, len(progCovData.Functions), len(lineCov))

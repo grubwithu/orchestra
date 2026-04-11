@@ -75,12 +75,23 @@ func TestGetConstraintGroups(t *testing.T) {
 			t.Errorf("Expected non-empty path for group %s", group.LeafFunction)
 		}
 		// Path should start with root function
-		if group.Path[0] != "main" {
-			t.Errorf("Expected path to start with 'main', got %s", group.Path[0])
+		if group.PathDetail[0] == nil || group.PathDetail[0].FunctionName != "main" {
+			t.Errorf("Expected path to start with 'main', got %v", func() string {
+				if group.PathDetail[0] == nil {
+					return "nil"
+				}
+				return group.PathDetail[0].FunctionName
+			}())
 		}
 		// Path should end with leaf function
-		if group.Path[len(group.Path)-1] != group.LeafFunction {
-			t.Errorf("Expected path to end with leaf function %s, got %s", group.LeafFunction, group.Path[len(group.Path)-1])
+		lastProfile := group.PathDetail[len(group.PathDetail)-1]
+		if lastProfile == nil || lastProfile.FunctionName != group.LeafFunction {
+			t.Errorf("Expected path to end with leaf function %s, got %v", group.LeafFunction, func() string {
+				if lastProfile == nil {
+					return "nil"
+				}
+				return lastProfile.FunctionName
+			}())
 		}
 	}
 }

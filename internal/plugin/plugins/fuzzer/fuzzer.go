@@ -12,6 +12,8 @@ import (
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/seed"
 )
 
+const PLUGIN_NAME = "fuzzer"
+
 // Plugin handles constraint data processing
 type Plugin struct {
 	config           plugin.PluginConfig
@@ -43,13 +45,13 @@ func NewPlugin() *Plugin {
 
 // Name returns the plugin name
 func (p *Plugin) Name() string {
-	return "fuzzer"
+	return PLUGIN_NAME
 }
 
 // Require checks if the plugin should process the given data
 // Constraint plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
-	_, ok := data.Data["prerun"].(*prerun.PrerunData)
+	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
 	return ok
 }
 
@@ -66,7 +68,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	defer p.mutex.Unlock()
 
 	// Get prerun results
-	prerunData, ok := data.Data["prerun"].(*prerun.PrerunData)
+	prerunData, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
 	if !ok {
 		return fmt.Errorf("prerun data not found for fuzzer: %s", data.Fuzzer)
 	}
@@ -129,7 +131,11 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		// Get important functions
 		importantFunctions := []string{}
 		for _, group := range coverageData.ConstraintGroups {
-			importantFunctions = append(importantFunctions, group.Path...)
+			for _, profile := range group.PathDetail {
+				if profile != nil {
+					importantFunctions = append(importantFunctions, profile.FunctionName)
+				}
+			}
 		}
 
 		// Calculate score
@@ -197,8 +203,8 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 	var result FuzzerResult
 
 	result.FuzzerScores = p.fuzzerScores
-	if previousResults["seed"] != nil {
-		seedResult, ok := previousResults["seed"].(seed.SeedResult)
+	if previousResults[seed.PLUGIN_NAME] != nil {
+		seedResult, ok := previousResults[seed.PLUGIN_NAME].(seed.SeedResult)
 		if ok {
 			result.SelectedFuzzer = analysis.SelectFuzzerByScores(*seedResult.ConstraintGroup, p.fuzzerScores)
 		}

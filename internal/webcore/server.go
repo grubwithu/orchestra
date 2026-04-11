@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/grubwithu/orchestra/internal/plugin"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/dict"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/fuzzer"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/seed"
@@ -42,6 +43,7 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 	// Register default plugins
 	prerunPlugin := prerun.NewPlugin()
 	seedPlugin := seed.NewPlugin()
+	dictPlugin := dict.NewPlugin()
 	fuzzerPlugin := fuzzer.NewPlugin()
 
 	if err := pluginRegistry.Register(prerunPlugin); err != nil {
@@ -49,6 +51,9 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 	}
 	if err := pluginRegistry.Register(seedPlugin); err != nil {
 		log.Printf("Error registering seed plugin: %v\n", err)
+	}
+	if err := pluginRegistry.Register(dictPlugin); err != nil {
+		log.Printf("Error registering dict plugin: %v\n", err)
 	}
 	if err := pluginRegistry.Register(fuzzerPlugin); err != nil {
 		log.Printf("Error registering fuzzer plugin: %v\n", err)
