@@ -50,7 +50,14 @@ func (p *Plugin) Name() string {
 
 func (p *Plugin) Require(data *plugin.PluginData) bool {
 	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
-	return ok
+	if !ok {
+		return false
+	}
+	_, ok = data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
+	if !ok {
+		return false
+	}
+	return data.Period != "begin"
 }
 
 func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
@@ -70,14 +77,13 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	p.ast = prerunData.AST
 	p.sourceCode = prerunData.SourceCode
 
-	seedData, ok := data.Data[seed.PLUGIN_NAME].(map[string]any)
+	seedData, ok := data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
 	if !ok {
 		return nil
 	}
 
-	constraintGroupsAny := seedData["constraint_groups"]
-	constraintGroups, ok := constraintGroupsAny.([]analysis.ConstraintGroup)
-	if !ok || len(constraintGroups) == 0 {
+	constraintGroups := seedData.ConstraintGroups
+	if len(constraintGroups) == 0 {
 		return nil
 	}
 

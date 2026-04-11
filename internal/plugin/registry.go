@@ -138,7 +138,7 @@ func (r *Registry) ProcessAll(ctx context.Context, data *PluginData) error {
 
 		// Check if plugin requires this data
 		if !p.Require(data) {
-			log.Printf("Plugin '%s' skipped (not required)\n", p.Name())
+			log.Printf("Plugin '%s' skipped (plugin not required or prerequisite not met)\n", p.Name())
 			continue
 		}
 
