@@ -52,10 +52,6 @@ func (p *Plugin) Name() string {
 // Constraint plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
 	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
-	if !ok {
-		return false
-	}
-	_, ok = data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
 	return ok
 }
 
@@ -99,7 +95,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 	}
 
 	// Get coverage data
-	coverageData, ok := data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
+	seedData, ok := data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
 	if !ok {
 		return fmt.Errorf("coverage data not found for fuzzer: %s", data.Fuzzer)
 	}
@@ -134,7 +130,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 
 		// Get important functions
 		importantFunctions := []string{}
-		for _, group := range coverageData.ConstraintGroups {
+		for _, group := range seedData.ConstraintGroups {
 			for _, profile := range group.PathDetail {
 				if profile != nil {
 					importantFunctions = append(importantFunctions, profile.FunctionName)
