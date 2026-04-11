@@ -205,7 +205,7 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 	result.FuzzerScores = p.fuzzerScores
 	if previousResults[seed.PLUGIN_NAME] != nil {
 		seedResult, ok := previousResults[seed.PLUGIN_NAME].(seed.SeedResult)
-		if ok {
+		if ok && seedResult.ConstraintGroup != nil && len(p.fuzzerScores) != 0 {
 			result.SelectedFuzzer = analysis.SelectFuzzerByScores(*seedResult.ConstraintGroup, p.fuzzerScores)
 		}
 	}
