@@ -55,7 +55,7 @@ func (p *Plugin) Require(data *plugin.PluginData) bool {
 	if !ok {
 		return false
 	}
-	_, ok = data.Data[seed.PLUGIN_NAME].(*seed.SeedResult)
+	_, ok = data.Data[seed.PLUGIN_NAME].(*seed.SeedData)
 	return ok
 }
 
