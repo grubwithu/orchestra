@@ -61,6 +61,7 @@ type FunctionProfile struct {
 	FunctionUses          int             `yaml:"functionUses"`
 	BranchProfiles        []BranchProfile `yaml:"BranchProfiles"` // Assuming strings, adjust as needed
 	Callsites             []Callsite      `yaml:"Callsites"`      // Assuming strings, adjust as needed
+	StringLiterals        []string        `yaml:"StringLiterals"` // Assuming strings, adjust as needed
 }
 
 type ProgramProfile struct {
