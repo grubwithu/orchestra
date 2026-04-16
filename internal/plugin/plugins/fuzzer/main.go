@@ -14,6 +14,11 @@ import (
 
 const PLUGIN_NAME = "fuzzer"
 
+type FuzzerData struct {
+	FuzzerScores     map[string]analysis.ConstraintScore `json:"fuzzer_scores"`
+	FuzzerEfficiency map[string]float64                  `json:"fuzzer_efficiency"`
+}
+
 // Plugin handles constraint data processing
 type Plugin struct {
 	config           plugin.PluginConfig
@@ -52,7 +57,7 @@ func (p *Plugin) Name() string {
 // Constraint plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
 	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
-	return ok
+	return ok && (data.Period == "end" || data.Period == "begin")
 }
 
 // Init initializes the plugin
@@ -189,6 +194,12 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		} else {
 			p.Log(ctx, "Processed data for fuzzer=%s\n", data.Fuzzer)
 		}
+
+		data.Data[PLUGIN_NAME] = &FuzzerData{
+			FuzzerScores:     p.fuzzerScores,
+			FuzzerEfficiency: p.fuzzerEfficiency,
+		}
+
 		return nil
 	} else {
 		return fmt.Errorf("AST or SourceCode is nil for fuzzer: %s", data.Fuzzer)

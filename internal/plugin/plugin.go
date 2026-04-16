@@ -8,6 +8,7 @@ type PluginConfig struct {
 	FuzzIntroPrefix string
 	Executable      string
 	SrcPathMatch    string
+	Output          string
 	Verbose         bool
 }
 
@@ -48,6 +49,10 @@ type Plugin interface {
 
 	// Log wrapper for log.Printf
 	Log(ctx context.Context, format string, args ...any)
+}
+
+type DataExportLog interface {
+	GetLog() any
 }
 
 // PluginWithPriority represents a plugin that can be prioritized

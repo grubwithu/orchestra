@@ -23,8 +23,8 @@ import (
 const PLUGIN_NAME = "seed"
 
 type SeedData struct {
-	GlobalCov        *analysis.ProgCovData
-	ConstraintGroups []analysis.ConstraintGroup
+	GlobalCov        *analysis.ProgCovData      `json:"-"`
+	ConstraintGroups []analysis.ConstraintGroup `json:"constraint_groups"`
 }
 
 type SeedResult struct {
@@ -53,7 +53,7 @@ func (p *Plugin) Name() string {
 // Seed plugin requires prerun data
 func (p *Plugin) Require(data *plugin.PluginData) bool {
 	_, ok := data.Data[prerun.PLUGIN_NAME].(*prerun.PrerunData)
-	return ok && data.Period != "begin"
+	return ok && data.Period == "end"
 }
 
 // Init initializes the plugin

@@ -34,7 +34,7 @@ type Server struct {
 	PluginRegistry *plugin.Registry
 }
 
-func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch string, verbose bool) *Server {
+func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch string, output string, verbose bool) *Server {
 	router := gin.Default()
 
 	// Initialize plugin registry
@@ -67,11 +67,11 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 		Verbose:        verbose,
 	}
 	server.setupRoutes()
-	go server.initPlugins(progPath, fuzzIntroPrefix, srcPathMatch)
+	go server.initPlugins(progPath, fuzzIntroPrefix, srcPathMatch, output)
 	return server
 }
 
-func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMatch string) {
+func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMatch string, output string) {
 	ctx := context.Background()
 
 	log.Println("Initializing plugins...")
@@ -94,6 +94,7 @@ func (s *Server) initPlugins(progPath string, fuzzIntroPrefix string, srcPathMat
 			Executable:      progPathAbs,
 			FuzzIntroPrefix: fuzzIntroPrefixAbs,
 			SrcPathMatch:    srcPathMatch,
+			Output:          output,
 			Verbose:         s.Verbose,
 		}); err != nil {
 			log.Printf("Error initializing plugin %s: %v\n", p.Name(), err)

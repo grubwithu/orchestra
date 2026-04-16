@@ -2,6 +2,7 @@ package dict
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"strings"
@@ -56,7 +57,7 @@ func (p *Plugin) Require(data *plugin.PluginData) bool {
 	if !ok {
 		return false
 	}
-	return data.Period != "begin"
+	return data.Period == "end" || data.Period == "begin"
 }
 
 func (p *Plugin) Init(ctx context.Context, config plugin.PluginConfig) error {
@@ -143,11 +144,16 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 		funcName := profile.FunctionName
 		if funcDict, exists := p.funcDicts[funcName]; exists {
 			for _, item := range funcDict.DictItems {
-				if seenValues[item.Value] {
+				decodedValue, err := base64.StdEncoding.DecodeString(item.Value)
+				if err != nil {
 					continue
 				}
-				seenValues[item.Value] = true
-				escapedValue := escapeForDict(item.Value)
+				valueStr := string(decodedValue)
+				if seenValues[valueStr] {
+					continue
+				}
+				seenValues[valueStr] = true
+				escapedValue := escapeForDict(valueStr)
 				lines = append(lines, fmt.Sprintf("keyword%d=\"%s\"", itemIndex, escapedValue))
 				itemIndex++
 			}
