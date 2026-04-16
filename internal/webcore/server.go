@@ -12,6 +12,7 @@ import (
 	"github.com/grubwithu/orchestra/internal/plugin"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/dict"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/fuzzer"
+	"github.com/grubwithu/orchestra/internal/plugin/plugins/logger"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
 	"github.com/grubwithu/orchestra/internal/plugin/plugins/seed"
 )
@@ -45,6 +46,7 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 	seedPlugin := seed.NewPlugin()
 	dictPlugin := dict.NewPlugin()
 	fuzzerPlugin := fuzzer.NewPlugin()
+	loggerPlugin := logger.NewPlugin()
 
 	if err := pluginRegistry.Register(prerunPlugin); err != nil {
 		log.Printf("Error registering prerun plugin: %v\n", err)
@@ -57,6 +59,9 @@ func NewServer(port int, progPath string, fuzzIntroPrefix string, srcPathMatch s
 	}
 	if err := pluginRegistry.Register(fuzzerPlugin); err != nil {
 		log.Printf("Error registering fuzzer plugin: %v\n", err)
+	}
+	if err := pluginRegistry.Register(loggerPlugin); err != nil {
+		log.Printf("Error registering logger plugin: %v\n", err)
 	}
 
 	server := &Server{
