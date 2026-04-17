@@ -8,7 +8,6 @@ package logger
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,9 +15,6 @@ import (
 	"time"
 
 	"github.com/grubwithu/orchestra/internal/plugin"
-	"github.com/grubwithu/orchestra/internal/plugin/plugins/fuzzer"
-	"github.com/grubwithu/orchestra/internal/plugin/plugins/prerun"
-	"github.com/grubwithu/orchestra/internal/plugin/plugins/seed"
 )
 
 const PLUGIN_NAME = "logger"
@@ -96,22 +92,10 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		Logs:      make(map[string]any),
 	}
 
-	prerunData, ok := data.Data[prerun.PLUGIN_NAME].(plugin.DataExportLog)
-	if !ok {
-		return fmt.Errorf("prerun data not found for dict: %s", data.Fuzzer)
-	}
-
-	entry.Logs[prerun.PLUGIN_NAME] = prerunData.GetLog()
-
-	if data.Period == "end" {
-		seedData, ok := data.Data[seed.PLUGIN_NAME].(plugin.DataExportLog)
+	for key, value := range data.Data {
+		data, ok := value.(plugin.DataExportLog)
 		if ok {
-			entry.Logs[seed.PLUGIN_NAME] = seedData.GetLog()
-		}
-
-		fuzzerData, ok := data.Data[fuzzer.PLUGIN_NAME].(plugin.DataExportLog)
-		if ok {
-			entry.Logs[fuzzer.PLUGIN_NAME] = fuzzerData.GetLog()
+			entry.Logs[key] = data.GetLog()
 		}
 	}
 

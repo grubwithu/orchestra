@@ -2,6 +2,6 @@ package seed
 
 type Log = SeedData
 
-func (sd *SeedData) GetLog() *Log {
+func (sd *SeedData) GetLog() any {
 	return sd
 }
