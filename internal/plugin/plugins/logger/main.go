@@ -93,6 +93,7 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Method:    "process",
 		Period:    data.Period,
+		Logs:      make(map[string]any),
 	}
 
 	prerunData, ok := data.Data[prerun.PLUGIN_NAME].(plugin.DataExportLog)
