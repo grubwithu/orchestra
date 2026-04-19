@@ -6,13 +6,15 @@ package seed
  * 1. Maintain a global coverage data.
  * 2. Use the global coverage data and static program information to
  *    calculate the most valuable constraint groups.
- * 3. When pfuzzer request for info, return the most valuable constraint groups.
+ * 3. When pfuzzer request for info, return a valuable constraint group.
  **/
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"os"
 	"sync"
 
 	"github.com/grubwithu/orchestra/internal/analysis"
@@ -144,7 +146,13 @@ func (p *Plugin) Result(ctx context.Context, previousResults map[string]any) (an
 
 	// Select a constraint group with weighted random selection
 	if len(p.constraintGroups) > 0 {
-		result.ConstraintGroup = analysis.SelectConstraintGroup(p.constraintGroups)
+		// Get environment variable "HFC_RANDOM_CG" to control whether to use random selection
+		if _, exists := os.LookupEnv("HFC_RANDOM_CG"); exists {
+			// Get a random number between 0 and len(p.constraintGroups)-1
+			result.ConstraintGroup = &p.constraintGroups[rand.Intn(len(p.constraintGroups))]
+		} else {
+			result.ConstraintGroup = analysis.SelectConstraintGroup(p.constraintGroups)
+		}
 	}
 
 	return &result, nil

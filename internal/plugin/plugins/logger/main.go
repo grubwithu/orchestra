@@ -24,6 +24,8 @@ type LogEntry struct {
 	Timestamp string         `json:"timestamp"`
 	Method    string         `json:"method"`
 	Period    string         `json:"period"`
+	Fuzzer    string         `json:"fuzzer,omitempty"`
+	JobID     int            `json:"job_id,omitempty"`
 	Logs      map[string]any `json:"logs"`
 }
 
@@ -89,6 +91,8 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Method:    "process",
 		Period:    data.Period,
+		Fuzzer:    data.Fuzzer,
+		JobID:     data.JobID,
 		Logs:      make(map[string]any),
 	}
 

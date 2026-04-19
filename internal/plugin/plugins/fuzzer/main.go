@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 
 	"github.com/grubwithu/orchestra/internal/analysis"
@@ -162,31 +163,34 @@ func (p *Plugin) Process(ctx context.Context, data *plugin.PluginData) error {
 		// Normalize the score
 		score = analysis.NormalizeScore(score)
 
-		// find the min and max efficiency
-		minEfficiency := 100.0
-		maxEfficiency := 0.0
-		for _, efficiency := range p.fuzzerEfficiency {
-			if efficiency < minEfficiency {
-				minEfficiency = efficiency
+		var k float64 = 1.0
+		// Get environment variable "HFC_FUZZER_NO_K" to control whether to use k
+		if _, exists := os.LookupEnv("HFC_FUZZER_NO_K"); !exists {
+			// find the min and max efficiency
+			minEfficiency := 100.0
+			maxEfficiency := 0.0
+			for _, efficiency := range p.fuzzerEfficiency {
+				if efficiency < minEfficiency {
+					minEfficiency = efficiency
+				}
+				if efficiency > maxEfficiency {
+					maxEfficiency = efficiency
+				}
 			}
-			if efficiency > maxEfficiency {
-				maxEfficiency = efficiency
+			// Normalize the efficiency coefficient to 0.5-1.5 range
+
+			if maxEfficiency-minEfficiency > 0 {
+				// (min, max) -> (0.5, 1.5)
+				k = 0.5 + (efficiency-minEfficiency)/(maxEfficiency-minEfficiency)*1.0
+			} else {
+				k = 1.0
 			}
-		}
-		// Normalize the efficiency coefficient to 0.5-1.5 range
-
-		var k float64
-
-		if maxEfficiency-minEfficiency > 0 {
-			// (min, max) -> (0.5, 1.5)
-			k = 0.5 + (efficiency-minEfficiency)/(maxEfficiency-minEfficiency)*1.0
-		} else {
-			k = 1.0
 		}
 
 		for i := range score {
 			score[i] *= k
 		}
+
 		p.fuzzerScores[data.Fuzzer] = score
 
 		if p.config.Verbose {
