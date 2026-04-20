@@ -1,9 +1,16 @@
 # hfc-test:latest
+
+# To facilitate deployment on the cluster when running batch experiments,
+# we built all the programs under test into the same image,
+# which may result in a very large image...
+
 FROM hfc-base:latest
 
 RUN apt-get update && apt-get install -y \
     libtool file zlib1g-dev libarchive-dev vim \
-    sqlite3 libsqlite3-dev pkg-config && \
+    sqlite3 libsqlite3-dev pkg-config libfl-dev \
+    libpsl-dev libidn2-dev libnghttp2-dev \
+    gperf meson ninja-build && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/hfc/

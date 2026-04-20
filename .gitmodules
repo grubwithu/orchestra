@@ -25,3 +25,33 @@
 [submodule "test/proj4"]
 	path = test/proj4
 	url = https://github.com/OSGeo/PROJ
+[submodule "test/curl"]
+	path = test/curl
+	url = https://github.com/curl/curl
+[submodule "test/jsoncpp"]
+	path = test/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp
+[submodule "test/lcms"]
+	path = test/lcms
+	url = https://github.com/mm2/Little-CMS.git
+[submodule "test/libpcap"]
+	path = test/libpcap
+	url = https://github.com/the-tcpdump-group/libpcap.git
+[submodule "test/libxslt"]
+	path = test/libxslt
+	url = https://gitlab.gnome.org/GNOME/libxslt.git
+[submodule "test/mbedtls"]
+	path = test/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git
+[submodule "test/openssl"]
+	path = test/openssl
+	url = https://github.com/openssl/openssl.git
+[submodule "test/openthread"]
+	path = test/openthread
+	url = https://github.com/openthread/openthread
+[submodule "test/re2"]
+	path = test/re2
+	url = https://github.com/google/re2.git
+[submodule "test/systemd"]
+	path = test/systemd
+	url = https://github.com/systemd/systemd.git
