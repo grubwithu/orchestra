@@ -17,12 +17,20 @@ WORKDIR /root/hfc/
 
 RUN git submodule update --init --recursive && cd test/ && \
     bash build_bloaty.sh && \
+    bash build_curl.sh && \
     bash build_freetype2.sh && \
     bash build_harfbuzz.sh && \
+    bash build_jsoncpp.sh && \
+    bash build_lcms.sh && \
     bash build_libjpeg.sh && \
+    bash build_libpcap.sh && \
     bash build_libpng.sh && \
     bash build_libxml2.sh && \
+    bash build_libxslt.sh && \
+    bash build_openssl.sh && \
+    bash build_openthread.sh && \
     bash build_proj4.sh && \
+    bash build_re2.sh && \
     bash build_sqlite3.sh && \
     bash clean_up.sh
 
