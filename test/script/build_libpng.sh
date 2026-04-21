@@ -29,7 +29,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   clang++ -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
     -I$(pwd)/install/include \
     ../contrib/oss-fuzz/libpng_read_fuzzer.cc \
-    ../../../pfuzzer/build/libfuzzer.a \
+    $PFUZZER_LIB \
     .libs/libpng16.a -lz -lm -lstdc++ \
     -o libpng_read_fuzzer
   exit 0
@@ -53,7 +53,7 @@ ${CC} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FLA
 ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
   -I$(pwd)/install/include \
   ../contrib/oss-fuzz/libpng_read_fuzzer.cc \
-  ../../../pfuzzer/build/libfuzzer.a \
+  $PFUZZER_LIB \
   .libs/libpng16.a -lz -lm -lstdc++ \
   -o libpng_read_fuzzer
 popd

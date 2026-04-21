@@ -16,7 +16,7 @@ done
 
 JOBS=$(($(grep -c ^processor /proc/cpuinfo) < 16 ? $(grep -c ^processor /proc/cpuinfo) : 16))
 WORKSPACE_DIR=$(pwd)
-PFUZZER_LIB="${WORKSPACE_DIR}/../pfuzzer/build/libfuzzer.a"
+# PFUZZER_LIB="${WORKSPACE_DIR}/../pfuzzer/build/libfuzzer.a"
 
 cd openthread
 git checkout 1798f3b61c6145ddb62679e3dd4c6fea8416ae2e

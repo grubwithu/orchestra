@@ -30,7 +30,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
     ../test/fuzzing/hb-shape-fuzzer.cc \
     -o hb-shape-fuzzer \
     $(pwd)/install/lib/libharfbuzz.a \
-    ../../../pfuzzer/build/libfuzzer.a
+    $PFUZZER_LIB
   exit 0
 fi
 
@@ -57,7 +57,7 @@ ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
   ../test/fuzzing/hb-shape-fuzzer.cc \
   -o hb-shape-fuzzer \
   $(pwd)/install/lib/libharfbuzz.a \
-  ../../../pfuzzer/build/libfuzzer.a
+  $PFUZZER_LIB
 popd
 
 

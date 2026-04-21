@@ -29,7 +29,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
     ../test/ossfuzz.c \
     -o ossfuzz \
     $(pwd)/install/lib/libsqlite3.a \
-    ../../../pfuzzer/build/libfuzzer.a
+    $PFUZZER_LIB
   exit 0
 fi
 
@@ -53,7 +53,7 @@ ${CC} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
   ../test/ossfuzz.c \
   -o ossfuzz \
   $(pwd)/install/lib/libsqlite3.a \
-  ../../../pfuzzer/build/libfuzzer.a
+  $PFUZZER_LIB
 popd
 
 

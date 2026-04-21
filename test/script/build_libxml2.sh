@@ -17,7 +17,7 @@ done
 JOBS=$(($(grep -c ^processor /proc/cpuinfo) < 16 ? $(grep -c ^processor /proc/cpuinfo) : 16))
 
 WORKSPACE_DIR=$(pwd)
-PFUZZER_LIB="${WORKSPACE_DIR}/../pfuzzer/build/libfuzzer.a"
+# PFUZZER_LIB="${WORKSPACE_DIR}/../pfuzzer/build/libfuzzer.a"
 
 cd libxml2
 git checkout ca6a8cf94672e6f3c48c08d6af2201599788fc17

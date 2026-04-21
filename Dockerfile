@@ -66,3 +66,5 @@ RUN git clone --depth 1 https://github.com/grubwithu/orchestra.git && \
     ln -s /root/orchestra /root/hfc && cd orchestra && \
     git submodule update --init --recursive pfuzzer && \
     make && cd pfuzzer && bash build.sh
+
+ENV PFUZZER_LIB="/root/orchestra/pfuzzer/build/libfuzzer.a"

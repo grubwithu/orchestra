@@ -26,7 +26,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   clang++ $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
     -I./install/include/ -I../include/ -I../libarchive-3.4.3/building/install/include/ \
     -larchive ../src/tools/ftfuzzer/ftfuzzer.cc  -o ftfuzzer \
-    ./install/lib/libfreetyped.a ../../../pfuzzer/build/libfuzzer.a
+    ./install/lib/libfreetyped.a $PFUZZER_LIB
   exit 0
 fi
 
@@ -52,7 +52,7 @@ ${CC} -fprofile-instr-generate -fcoverage-mapping $DEFAULT_FLAGS -fsanitize=addr
   -o ftfuzzer_cov ./install/lib/libfreetyped.a
 ${CC} $DEFAULT_FLAGS -fsanitize=address,fuzzer-no-link -std=c++11 -lstdc++ \
   -larchive -I./install/include/ -I../include/ ../src/tools/ftfuzzer/ftfuzzer.cc \
-  -o ftfuzzer ./install/lib/libfreetyped.a ../../../pfuzzer/build/libfuzzer.a
+  -o ftfuzzer ./install/lib/libfreetyped.a $PFUZZER_LIB
 popd
 
 mkdir -p build__HFC_qzmp__

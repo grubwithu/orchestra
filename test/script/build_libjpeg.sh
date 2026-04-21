@@ -30,7 +30,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
     ../fuzz/libjpeg_turbo_fuzzer.cc \
     -o libjpeg_turbo_fuzzer \
     $(pwd)/install/lib/libturbojpeg.a \
-    ../../../pfuzzer/build/libfuzzer.a
+    $PFUZZER_LIB
   exit 0
 fi
 
@@ -65,7 +65,7 @@ ${CXX} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
   ../fuzz/libjpeg_turbo_fuzzer.cc \
   -o libjpeg_turbo_fuzzer \
   $(pwd)/install/lib/libturbojpeg.a \
-  ../../../pfuzzer/build/libfuzzer.a
+  $PFUZZER_LIB
 
 popd
 
