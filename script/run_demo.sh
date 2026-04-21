@@ -33,26 +33,60 @@ if [ -z "$TARGET" ]; then
 fi
 PROGNAME=""
 
-if [ $TARGET == "bloaty" ]; then
-  PROGNAME=fuzz_target
-elif [ $TARGET == "libjpeg-turbo" ]; then
-  PROGNAME=libjpeg_turbo_fuzzer
-elif [ $TARGET == "libxml2" ]; then
-  PROGNAME=xml
-elif [ $TARGET == "proj4" ]; then
-  PROGNAME=proj_crs_to_crs_fuzzer
-elif [ $TARGET == "libpng" ]; then
-  PROGNAME=libpng_read_fuzzer
-elif [ $TARGET == "freetype2" ]; then
-  PROGNAME=ftfuzzer
-elif [ $TARGET == "sqlite3" ]; then
-  PROGNAME=ossfuzz
-elif [ $TARGET == "harfbuzz" ]; then
-  PROGNAME=hb-shape-fuzzer
-else
-  echo "Unknown target: $TARGET"
-  exit 1
-fi
+case "$TARGET" in
+  bloaty)
+    PROGNAME="fuzz_target"
+    ;;
+  curl)
+    PROGNAME="curl_fuzzer_http"
+    ;;
+  freetype2)
+    PROGNAME="ftfuzzer"
+    ;;
+  harfbuzz)
+    PROGNAME="hb-shape-fuzzer"
+    ;;
+  jsoncpp)
+    PROGNAME="jsoncpp_fuzzer"
+    ;;
+  lcms)
+    PROGNAME="cms_transform_fuzzer"
+    ;;
+  libjpeg|libjpeg-turbo)
+    PROGNAME="libjpeg_turbo_fuzzer"
+    ;;
+  libpcap)
+    PROGNAME="fuzz_both"
+    ;;
+  libpng)
+    PROGNAME="libpng_read_fuzzer"
+    ;;
+  libxml2)
+    PROGNAME="xml"
+    ;;
+  libxslt)
+    PROGNAME="xpath"
+    ;;
+  openssl)
+    PROGNAME="x509"
+    ;;
+  openthread)
+    PROGNAME="ot-ip6-send-fuzzer"
+    ;;
+  proj4)
+    PROGNAME="proj_crs_to_crs_fuzzer"
+    ;;
+  re2)
+    PROGNAME="fuzzer"
+    ;;
+  sqlite3)
+    PROGNAME="ossfuzz"
+    ;;
+  *)
+    echo "Unknown target: $TARGET"
+    exit 1
+    ;;
+esac
 
 ## 4. Run HFC
 pushd test/submodule/$TARGET/
