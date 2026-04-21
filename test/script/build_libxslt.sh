@@ -79,14 +79,12 @@ make -j$JOBS
 make install
 popd
 
-mkdir -p libxslt-build
-pushd libxslt-build
-export PATH="$(pwd)/../libxml2-build/install/bin:$PATH"
-export PKG_CONFIG_PATH="$(pwd)/../libxml2-build/install/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PATH="$(pwd)/libxml2-build/install/bin:$PATH"
+export PKG_CONFIG_PATH="$(pwd)/libxml2-build/install/lib/pkgconfig:$PKG_CONFIG_PATH"
 
-../../configure \
+../configure \
   --prefix=$(pwd)/install \
-  --with-libxml-prefix=$(pwd)/../libxml2-build/install \
+  --with-libxml-prefix=$(pwd)/libxml2-build/install \
   --disable-shared \
   --without-python \
   --without-crypto
@@ -103,7 +101,7 @@ ${CXX} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FL
   -o xpath_cov \
   install/lib/libexslt.a \
   install/lib/libxslt.a \
-  ../libxml2-build/install/lib/libxml2.a \
+  ./libxml2-build/install/lib/libxml2.a \
   -lm -lpthread
 
 ${CXX} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
@@ -111,10 +109,9 @@ ${CXX} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
   -o xpath \
   install/lib/libexslt.a \
   install/lib/libxslt.a \
-  ../libxml2-build/install/lib/libxml2.a \
+  ./libxml2-build/install/lib/libxml2.a \
   -lm -lpthread ${PFUZZER_LIB}
 
-popd
 popd
 
 
@@ -141,14 +138,12 @@ make -j$JOBS
 make install
 popd
 
-mkdir -p libxslt-build
-pushd libxslt-build
-export PATH="$(pwd)/../libxml2-build/install/bin:$PATH"
-export PKG_CONFIG_PATH="$(pwd)/../libxml2-build/install/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PATH="$(pwd)/libxml2-build/install/bin:$PATH"
+export PKG_CONFIG_PATH="$(pwd)/libxml2-build/install/lib/pkgconfig:$PKG_CONFIG_PATH"
 
-../../configure \
+../configure \
   --prefix=$(pwd)/install \
-  --with-libxml-prefix=$(pwd)/../libxml2-build/install \
+  --with-libxml-prefix=$(pwd)/libxml2-build/install \
   --disable-shared \
   --without-python \
   --without-crypto
@@ -165,12 +160,11 @@ ${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
   tests/fuzz/xpath.o tests/fuzz/fuzz.o \
   install/lib/libexslt.a \
   install/lib/libxslt.a \
-  ../libxml2-build/install/lib/libxml2.a \
+  ./libxml2-build/install/lib/libxml2.a \
   -lm -lpthread
 
 get-bc -o xpath.bc xpath
 opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" xpath.bc
 
-popd
 popd
 

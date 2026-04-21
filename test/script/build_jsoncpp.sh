@@ -30,7 +30,6 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   export CXX="clang++"
   export CXXFLAGS="-fsanitize=fuzzer-no-link $DEFAULT_FLAGS"
   
-  # 直接复用已经编译好的静态库重新链接
   ${CXX} $CXXFLAGS \
     -I$(pwd)/install/include \
     ../src/test_lib_json/fuzz.cpp \

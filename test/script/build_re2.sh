@@ -34,7 +34,7 @@ if [ $UPDATE_PFUZZER -eq 1 ]; then
   ${CXX} $CXXFLAGS \
     -I../re2 \
     $FUZZ_TARGET \
-    -o re2_fuzzer \
+    -o fuzzer \
     ../re2/re2.cc \
     -lpthread -lm ${PFUZZER_LIB}
   exit 0
@@ -64,13 +64,15 @@ make -j$JOBS && make install
 
 ${CXX} -fprofile-instr-generate -fcoverage-mapping -fsanitize=fuzzer $DEFAULT_FLAGS \
   -I$(pwd)/install/include -I$ABSEIL_PATH/include -I.. \
-  $FUZZ_TARGET -o re2_fuzzer_cov \
-  libre2.a $ABSEIL_PATH/lib/*.a -lpthread -lstdc++
+  $FUZZ_TARGET -o fuzzer_cov libre2.a \
+  -Wl,--start-group $ABSEIL_PATH/lib/*.a -Wl,--end-group \
+  -lpthread -lstdc++
 
 ${CXX} -fsanitize=fuzzer-no-link $DEFAULT_FLAGS \
   -I$(pwd)/install/include -I$ABSEIL_PATH/include -I.. \
-  $FUZZ_TARGET -o re2_fuzzer \
-  libre2.a $ABSEIL_PATH/lib/*.a -lpthread -lstdc++ ${PFUZZER_LIB}
+  $FUZZ_TARGET -o fuzzer libre2.a  \
+  -Wl,--start-group $ABSEIL_PATH/lib/*.a -Wl,--end-group \
+  -lpthread -lstdc++ ${PFUZZER_LIB}
 
 popd
 
@@ -89,13 +91,14 @@ make -j$JOBS && make install
 
 ${CXX} -c -fsanitize=fuzzer $DEFAULT_FLAGS \
   -I$(pwd)/install/include -I$ABSEIL_PATH/include -I.. \
-  $FUZZ_TARGET -o re2_fuzzer.o
+  $FUZZ_TARGET -o fuzzer.o
 
 ${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
-  -o re2_fuzzer re2_fuzzer.o \
-  libre2.a $ABSEIL_PATH/lib/*.a -lpthread -lstdc++
+  -o fuzzer fuzzer.o libre2.a \
+  -Wl,--start-group $ABSEIL_PATH/lib/*.a -Wl,--end-group \
+  -lpthread -lstdc++
 
-get-bc -o re2_fuzzer.bc re2_fuzzer
-opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" re2_fuzzer.bc
+get-bc -o fuzzer.bc fuzzer
+opt -load-pass-plugin=${FUZZ_INTRO} -passes="fuzz-introspector" fuzzer.bc
 
 popd

@@ -55,7 +55,7 @@ else
 fi
 
 ## 4. Run HFC
-pushd test/$TARGET/
+pushd test/submodule/$TARGET/
 pushd build__HFC_qzmp__/
 DATA_FILE=$(ls ./fuzzerLogFile*.data | head -n 1)
 DATA_FILE_ABS=$(realpath $DATA_FILE)
@@ -79,7 +79,7 @@ export HFC_URL=http://localhost:8080
 if [ $HFC_ONLY -eq 0 ]; then
   mkdir -p tmp_xx223
 
-  timeout -s INT 24h test/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ \
+  timeout -s INT 24h test/submodule/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ \
   -rss_limit_mb=0 -max_len=1048575 -ignore_crashes=1 -entropic=0 \
   -fork=4 -fuzzers=afl,fairfuzz,aflfast,redqueen,entropic $PASS_ARGS
 fi

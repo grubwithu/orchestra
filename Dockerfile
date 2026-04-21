@@ -47,7 +47,7 @@ RUN go install github.com/SRI-CSL/gllvm/cmd/...@latest
 
 WORKDIR /opt
 
-RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.1/fuzzers.tgz && \
+RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.2/fuzzers.tgz && \
     tar -zxf fuzzers.tgz && rm fuzzers.tgz && cd fuzzers && bash build.sh
 
 ENV AFL_SYSTEM_CONFIG="/opt/fuzzers/AFLplusplus/afl-system-config"

@@ -1,1 +1,1 @@
-test/**.sh linguist-vendored
+test/script/**.sh linguist-vendored
