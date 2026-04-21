@@ -81,5 +81,5 @@ if [ $HFC_ONLY -eq 0 ]; then
 
   timeout -s INT 24h test/submodule/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ \
   -rss_limit_mb=0 -max_len=1048575 -ignore_crashes=1 -entropic=0 \
-  -fork=4 -fuzzers=afl,fairfuzz,aflfast,redqueen,entropic $PASS_ARGS
+  -fork=4 -fuzzers=afl,fairfuzz,aflfast,mopt,aflsmart,darwin,lafintel,redqueen,entropic $PASS_ARGS
 fi
