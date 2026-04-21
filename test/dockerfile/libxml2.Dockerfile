@@ -5,5 +5,4 @@ WORKDIR /root/hfc/test
 RUN git submodule update --init --recursive submodule/libxml2 && \
     cd submodule/ && bash ../script/build_libxml2.sh
 
-RUN cd /opt && cd targets/ && bash hfc.sh && cd .. && \
-    cd fuzzers/ && bash hfc.sh && mv seeds/* /root/hfc/test/
+RUN /usr/local/bin/prepare_hfc_artifacts.sh

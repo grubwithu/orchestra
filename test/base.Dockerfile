@@ -19,3 +19,7 @@ RUN wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.2/targets
     wget https://github.com/grubwithu/pfuzzer/releases/download/Alpha0.2/seeds.tgz && \
     tar -xzf seeds.tgz && rm seeds.tgz
 
+COPY script/prepare_hfc_artifacts.sh /usr/local/bin/prepare_hfc_artifacts.sh
+RUN chmod +x /usr/local/bin/prepare_hfc_artifacts.sh
+
+
