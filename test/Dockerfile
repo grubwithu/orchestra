@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libtool file zlib1g-dev libarchive-dev vim \
     sqlite3 libsqlite3-dev pkg-config libfl-dev \
     libpsl-dev libidn2-dev libnghttp2-dev \
-    gperf meson ninja-build && \
+    gperf meson ninja-build flex && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/hfc/
