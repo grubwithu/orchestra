@@ -55,3 +55,12 @@
 [submodule "test/systemd"]
 	path = test/submodule/systemd
 	url = https://github.com/systemd/systemd.git
+[submodule "test/submodule/vorbis"]
+	path = test/submodule/vorbis
+	url = https://github.com/xiph/vorbis
+[submodule "test/submodule/woff2"]
+	path = test/submodule/woff2
+	url = https://github.com/google/woff2
+[submodule "test/submodule/zlib"]
+	path = test/submodule/zlib
+	url = https://github.com/madler/zlib.git
