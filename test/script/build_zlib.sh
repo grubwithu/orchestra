@@ -27,6 +27,8 @@ if [ ! -f "${PFUZZER_LIB}" ]; then
   exit 1
 fi
 
+wget https://raw.githubusercontent.com/google/oss-fuzz/refs/heads/master/projects/zlib/zlib_uncompress_fuzzer.cc -O zlib_uncompress_fuzzer.cc
+
 DEFAULT_FLAGS="-fsanitize-coverage=trace-cmp -O1 -fno-omit-frame-pointer -g"
 
 if [ $UPDATE_PFUZZER -eq 1 ]; then

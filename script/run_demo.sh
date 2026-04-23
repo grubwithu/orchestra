@@ -67,6 +67,9 @@ case "$TARGET" in
   libxslt)
     PROGNAME="xpath"
     ;;
+  mbedtls)
+    PROGNAME="fuzz_dtlsclient"
+    ;;
   openssl)
     PROGNAME="x509"
     ;;
@@ -81,6 +84,18 @@ case "$TARGET" in
     ;;
   sqlite3)
     PROGNAME="ossfuzz"
+    ;;
+  systemd)
+    PROGNAME="fuzz-link-parser"
+    ;;
+  vorbis)
+    PROGNAME="decode_fuzzer"
+    ;;
+  woff2)
+    PROGNAME="convert_woff2ttf_fuzzer"
+    ;;
+  zlib)
+    PROGNAME="zlib_uncompress_fuzzer"
     ;;
   *)
     echo "Unknown target: $TARGET"
