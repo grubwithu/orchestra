@@ -173,6 +173,7 @@ ${CXX} -fsanitize=fuzzer $DEFAULT_FLAGS \
   udevadm.p/src_udev_udev-builtin-net_id.c.o \
   udevadm.p/src_udev_udev-builtin-net_setup_link.c.o \
   udevadm.p/src_udev_udev-builtin-path_id.c.o \
+  udevadm.p/src_udev_udev-builtin-uaccess.c.o \
   udevadm.p/src_udev_udev-builtin-usb_id.c.o \
   udevadm.p/src_udev_udev-config.c.o \
   udevadm.p/src_udev_udev-ctrl.c.o \

@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y \
     libtool file zlib1g-dev libarchive-dev vim \
     sqlite3 libsqlite3-dev pkg-config libfl-dev \
     libpsl-dev libidn2-dev libnghttp2-dev gperf \
-    meson ninja-build flex bison python3-venv && \
+    meson ninja-build flex bison python3-venv \
+    libssl-dev libcrypto++-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt
