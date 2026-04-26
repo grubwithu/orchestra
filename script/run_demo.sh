@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --default)
-      PASS_ARGS+=("-fork=4 -fuzzers=afl,fairfuzz,aflfast,mopt,aflsmart,darwin,lafintel,redqueen,entropic")
+      PASS_ARGS+="-fork=4 -fuzzers=afl,fairfuzz,aflfast,mopt,aflsmart,darwin,lafintel,redqueen,entropic"
     *)
       PASS_ARGS+="$1 "
       shift
