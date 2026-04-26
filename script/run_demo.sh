@@ -20,6 +20,8 @@ while [[ $# -gt 0 ]]; do
       HFC_ONLY=1
       shift
       ;;
+    --default)
+      PASS_ARGS+=("-fork=4 -fuzzers=afl,fairfuzz,aflfast,mopt,aflsmart,darwin,lafintel,redqueen,entropic")
     *)
       PASS_ARGS+="$1 "
       shift
@@ -129,6 +131,5 @@ if [ $HFC_ONLY -eq 0 ]; then
   mkdir -p tmp_xx223
 
   timeout -s INT 24h test/submodule/${TARGET}/build-runtime/${PROGNAME} tmp_xx223/ test/${TARGET}_seeds/ \
-  -rss_limit_mb=0 -max_len=1048575 -ignore_crashes=1 -entropic=0 -strategy_threshold=120 \
-  -fork=4 -fuzzers=afl,fairfuzz,aflfast,mopt,aflsmart,darwin,lafintel,redqueen,entropic $PASS_ARGS
+  -rss_limit_mb=0 -max_len=1048575 -ignore_crashes=1 -entropic=0 -strategy_threshold=120 $PASS_ARGS
 fi
